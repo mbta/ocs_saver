@@ -1,0 +1,6 @@
+*.md
+dist
+LICENSE
+node_modules
+package-lock.json
+tsconfig.json
