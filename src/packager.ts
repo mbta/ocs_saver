@@ -1,3 +1,5 @@
-const hello = (name: string) => `Hello ${name}!`;
+import { ScheduledHandler } from "aws-lambda";
 
-export default hello;
+const handler: ScheduledHandler = async () => undefined;
+
+export { handler };
