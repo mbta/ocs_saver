@@ -1,4 +1,4 @@
-import hello from "../src/index";
+import hello from "../src/processor";
 
 describe("hello", () => {
   test("says hello", () => {
