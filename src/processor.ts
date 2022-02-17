@@ -1,3 +1,17 @@
-const hello = (name: string) => `Hello ${name}!`;
+import {
+  FirehoseTransformationHandler,
+  FirehoseTransformationResultRecord,
+} from "aws-lambda";
 
-export default hello;
+const handler: FirehoseTransformationHandler = async ({ records }) => ({
+  records: records.map(
+    ({ recordId, data }): FirehoseTransformationResultRecord => ({
+      recordId,
+      data,
+      result: "Ok",
+      metadata: { partitionKeys: { serviceDay: "1970-01-01" } },
+    })
+  ),
+});
+
+export { handler };
