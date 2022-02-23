@@ -1,0 +1,16 @@
+name: Set up deps
+description: Loads NPM dependencies for a CI job, installing them if not cached
+runs:
+  using: composite
+  steps:
+    - uses: ./.github/actions/tools
+
+    - uses: actions/cache@v2
+      id: deps-cache
+      with:
+        path: node_modules
+        key: ${{ env.CACHE_UUID }}-node-${{ hashFiles('package-lock.json') }}
+
+    - run: npm ci
+      shell: bash
+      if: "!steps.deps-cache.outputs.cache-hit"
