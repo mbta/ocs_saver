@@ -8,6 +8,7 @@ module.exports = {
     "plugin:@typescript-eslint/recommended",
     "prettier",
   ],
+  ignorePatterns: "dist/**/*",
   parser: "@typescript-eslint/parser",
   parserOptions: {
     ecmaVersion: "latest",
