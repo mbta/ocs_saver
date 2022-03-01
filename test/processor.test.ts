@@ -1,4 +1,4 @@
-import { handler } from "../src/processor";
+import { handler } from "~/src/processor";
 import { FirehoseTransformationEvent } from "aws-lambda";
 import { callback, context } from "./fixtures";
 

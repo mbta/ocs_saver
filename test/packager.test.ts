@@ -1,4 +1,4 @@
-import { handler } from "../src/packager";
+import { handler } from "~/src/packager";
 import { ScheduledEvent } from "aws-lambda";
 import { callback, context } from "./fixtures";
 
