@@ -1,24 +1,13 @@
 import { handler } from "~/src/processor";
 import { FirehoseTransformationEvent } from "aws-lambda";
-import { callback, context } from "./fixtures";
-
-const event: FirehoseTransformationEvent = {
-  invocationId: "abc12345",
-  deliveryStreamArn: "aws:arn:firehose:...",
-  sourceKinesisStreamArn: "aws:arn:kinesis:...",
-  region: "us-east-1",
-  records: [
-    {
-      recordId: "xyz12345",
-      approximateArrivalTimestamp: 1645129543,
-      data: "VGhlIGZpc2ggd2FzIGRlbGlzaCwgYW5kIGl0IG1hZGUgcXVpdGUgYSBkaXNoLg==",
-    },
-  ],
-};
+import { lambdaContextFactory } from "./factories/common";
+import { firehoseEventFactory } from "./factories/processor";
 
 test("passes records through with a static partition key", async () => {
+  const event = firehoseEventFactory.build();
   const { recordId, data } = event.records[0];
-  const result = await handler(event, context, callback);
+
+  const result = await handler(event, lambdaContextFactory.build(), jest.fn());
 
   expect(result).toEqual({
     records: [
