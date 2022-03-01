@@ -4,9 +4,9 @@ import { Callback, Context } from "aws-lambda";
  * Shared fixture data for tests.
  */
 
-const callback: Callback = () => undefined;
+export const callback: Callback = () => undefined;
 
-const context: Context = {
+export const context: Context = {
   functionName: "test-func",
   functionVersion: "0",
   invokedFunctionArn: "arn:aws:lambda:...",
@@ -21,5 +21,3 @@ const context: Context = {
   fail: () => undefined,
   succeed: () => undefined,
 };
-
-export { callback, context };

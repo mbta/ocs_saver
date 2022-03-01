@@ -1,5 +1,3 @@
 import { ScheduledHandler } from "aws-lambda";
 
-const handler: ScheduledHandler = async () => undefined;
-
-export { handler };
+export const handler: ScheduledHandler = async () => undefined;
