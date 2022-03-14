@@ -17,11 +17,13 @@ const transformRecord = ({ recordId, data }: EventRecord): ResultRecord => {
     const event = JSON.parse(Buffer.from(data, "base64").toString());
     const { time, data: { raw } } = struct(event, OCSEvent); // prettier-ignore
     const datetime = localFromISO(time);
+    // Mimic the timestamp prepended by the old OCS.LogUploader from RTR
+    const timestampedRaw = `${datetime.toFormat("MM/dd/yy,HH:mm:ss")},${raw}`;
 
     return {
       recordId,
       result: "Ok",
-      data: Buffer.from(raw).toString("base64"),
+      data: Buffer.from(timestampedRaw).toString("base64"),
       metadata: { partitionKeys: { serviceDay: serviceDayKey(datetime) } },
     };
   } catch (error) {

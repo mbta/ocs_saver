@@ -3,6 +3,8 @@ import { OCSEvent } from "~/src/processor/structs";
 import {
   FirehoseTransformationEvent,
   FirehoseTransformationEventRecord,
+  FirehoseTransformationResult,
+  FirehoseTransformationResultRecord,
 } from "aws-lambda";
 import { lambdaContextFactory } from "./factories/common";
 import {
@@ -11,8 +13,8 @@ import {
   ocsEventFactory,
 } from "./factories/processor";
 
-const handle = async (event: FirehoseTransformationEvent) =>
-  await handler(event, lambdaContextFactory.build(), jest.fn());
+const handle = (event: FirehoseTransformationEvent) =>
+  handler(event, lambdaContextFactory.build(), jest.fn());
 
 const buildFirehoseEvent = (records: FirehoseTransformationEventRecord[]) =>
   firehoseEventFactory.build({ records });
@@ -23,20 +25,36 @@ const buildKinesisRecord = (id: string, ocsEventAttrs: Partial<OCSEvent>) =>
     { transient: { encodeEvent: ocsEventFactory.build(ocsEventAttrs) } }
   );
 
-test("transforms records to raw OCS messages", async () => {
-  const messages = ["101,DIAG,00:00:01,test1", "102,DIAG,00:00:02,test2"];
-  const encoded = messages.map((msg) => Buffer.from(msg).toString("base64"));
+// prettier-ignore
+const decodeRecordData = (record: FirehoseTransformationResultRecord) =>
+  ({ ...record, data: Buffer.from(record.data, "base64").toString() });
+
+test("transforms records to timestamped raw OCS messages", async () => {
   const event = buildFirehoseEvent([
-    buildKinesisRecord("rec1", { data: { raw: messages[0] } }),
-    buildKinesisRecord("rec2", { data: { raw: messages[1] } }),
+    buildKinesisRecord("rec1", {
+      time: "2022-03-01T05:00:02Z",
+      data: { raw: "101,DIAG,00:00:01,test1" },
+    }),
+    buildKinesisRecord("rec2", {
+      time: "2022-03-01T05:00:03Z",
+      data: { raw: "102,DIAG,00:00:02,test2" },
+    }),
   ]);
 
-  expect(await handle(event)).toMatchObject({
-    records: [
-      { data: encoded[0], recordId: "rec1", result: "Ok" },
-      { data: encoded[1], recordId: "rec2", result: "Ok" },
-    ],
-  });
+  const { records } = (await handle(event)) as FirehoseTransformationResult;
+
+  expect(records.map(decodeRecordData)).toMatchObject([
+    {
+      data: "03/01/22,00:00:02,101,DIAG,00:00:01,test1",
+      recordId: "rec1",
+      result: "Ok",
+    },
+    {
+      data: "03/01/22,00:00:03,102,DIAG,00:00:02,test2",
+      recordId: "rec2",
+      result: "Ok",
+    },
+  ]);
 });
 
 test("generates partition keys based on the service day", async () => {
