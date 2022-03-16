@@ -10,54 +10,57 @@ import {
   paginateListObjectsV2,
 } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
+import { AWSLambda as Sentry } from "@sentry/serverless";
 import { ScheduledHandler } from "aws-lambda";
 import { create as struct } from "superstruct";
 import { create as createTar } from "tar";
 import { localFromISO } from "./datetime";
+import { exception } from "./errors";
 import { Environment } from "./packager/structs";
 
-class BadS3ResponseError extends Error {}
-class OutputKeyExistsError extends Error {}
+Sentry.init();
 
-export const handler: ScheduledHandler = async ({ time }) => {
-  // Copy the env to avoid `optional` properties becoming the string "undefined"
-  // instead of real `undefined`; this may have to do with the automatic string
-  // conversion behavior of `process.env`
-  const env = struct({ ...process.env }, Environment);
-  const client = makeS3Client(env);
-  const {
-    S3_BUCKET: bucket,
-    S3_PREFIX_OUTPUT: outputPrefix,
-    S3_PREFIX_SOURCE: sourcePrefix,
-  } = env;
+export const handler: ScheduledHandler = Sentry.wrapHandler(
+  async ({ time }) => {
+    // Copy `process.env` to avoid `optional` properties becoming the string
+    // "undefined" instead of real `undefined`; this may have to do with its
+    // automatic string conversion behavior
+    const env = struct({ ...process.env }, Environment);
+    const client = makeS3Client(env);
+    const {
+      S3_BUCKET: bucket,
+      S3_PREFIX_OUTPUT: outputPrefix,
+      S3_PREFIX_SOURCE: sourcePrefix,
+    } = env;
 
-  const serviceDay = localFromISO(time).minus({ days: 1 }).toISODate();
-  const shortServiceDay = serviceDay.replace(/-/g, "");
-  const outputKey = path.posix.join(outputPrefix, `${shortServiceDay}.tar.gz`);
+    const serviceDay = localFromISO(time).minus({ days: 1 }).toISODate();
+    const outputLabel = serviceDay.replace(/-/g, "");
+    const outputKey = path.posix.join(outputPrefix, `${outputLabel}.tar.gz`);
 
-  if (await objectExists(client, bucket, outputKey))
-    throw new OutputKeyExistsError(outputKey);
+    if (await objectExists(client, bucket, outputKey))
+      throw exception("OutputKeyExists", outputKey);
 
-  const archiveRoot = await concatAllObjects(
-    client,
-    bucket,
-    path.posix.join(sourcePrefix, serviceDay),
-    // Mimic the directory structure of the old OCS.LogUploader from RTR
-    path.join("root", "persistent-state", `${shortServiceDay}.txt`)
-  );
+    const archiveRoot = await concatAllObjects(
+      client,
+      bucket,
+      path.posix.join(sourcePrefix, serviceDay),
+      // Mimic the directory structure of the old OCS.LogUploader from RTR
+      path.join("root", "persistent-state", `${outputLabel}.txt`)
+    );
 
-  const upload = new Upload({
-    client,
-    params: {
-      Body: createTarStream(archiveRoot, ["."]),
-      Bucket: bucket,
-      ContentType: "application/gzip",
-      Key: outputKey,
-    },
-  });
+    const upload = new Upload({
+      client,
+      params: {
+        Body: createTarStream(archiveRoot, ["."]),
+        Bucket: bucket,
+        ContentType: "application/gzip",
+        Key: outputKey,
+      },
+    });
 
-  await upload.done();
-};
+    await upload.done();
+  }
+);
 
 /**
  * Downloads and concatenates every S3 object with a given prefix (ordered by
@@ -86,14 +89,14 @@ const concatAllObjects = async (
     Contents: objects,
   } of paginateListObjectsV2({ client }, { Bucket: bucket, Prefix: prefix })) {
     if (objects === undefined)
-      throw new BadS3ResponseError(JSON.stringify(metadata));
+      throw exception("BadS3Response", JSON.stringify(metadata));
 
     for (const { Key: key } of objects) {
       const command = new GetObjectCommand({ Bucket: bucket, Key: key });
       const { $metadata: metadata, Body: data } = await client.send(command);
 
       if (data === undefined)
-        throw new BadS3ResponseError(JSON.stringify(metadata));
+        throw exception("BadS3Response", JSON.stringify(metadata));
 
       await fs.appendFile(outputFile, data);
     }
