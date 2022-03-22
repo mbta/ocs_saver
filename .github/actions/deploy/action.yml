@@ -7,13 +7,15 @@ inputs:
   aws-secret-access-key:
     description: AWS secret key
     required: true
+  dry-run:
+    description: >-
+      If truthy, the deploy will be a dry run, or will not be attempted at all
+      if `aws-access-key-id` is blank (instead of erroring)
+    required: false
+    default: ""
   environment:
     description: Name of the environment to deploy to (dev/prod)
     required: true
-  options:
-    description: Extra options to be passed to the `aws` commands
-    required: false
-    default: ""
 runs:
   using: composite
   steps:
@@ -28,8 +30,9 @@ runs:
         aws lambda update-function-code
         --function-name ocs-saver-${{ inputs.environment }}-packager
         --zip-file fileb://dist/packager.zip
-        ${{ inputs.options }}
+        ${{ inputs.dry-run && '--dry-run' || '' }}
       shell: bash
+      if: ${{ !inputs.dry-run || inputs.aws-access-key-id }}
       env:
         AWS_ACCESS_KEY_ID: ${{ inputs.aws-access-key-id }}
         AWS_SECRET_ACCESS_KEY: ${{ inputs.aws-secret-access-key }}
@@ -39,8 +42,9 @@ runs:
         aws lambda update-function-code
         --function-name ocs-saver-${{ inputs.environment }}-firehose-processor
         --zip-file fileb://dist/processor.zip
-        ${{ inputs.options }}
+        ${{ inputs.dry-run && '--dry-run' || '' }}
       shell: bash
+      if: ${{ !inputs.dry-run || inputs.aws-access-key-id }}
       env:
         AWS_ACCESS_KEY_ID: ${{ inputs.aws-access-key-id }}
         AWS_SECRET_ACCESS_KEY: ${{ inputs.aws-secret-access-key }}
