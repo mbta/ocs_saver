@@ -94,6 +94,23 @@ test("doesn't write the output object if it already exists", async () => {
   expect(output).toEqual(existingOutput);
 });
 
+test("overwrites the output object if an option is provided", async () => {
+  const existingOutput = Buffer.from("existing output");
+  await putSourceObject("2022-01-01/ocs", "updated output");
+  await putOutputObject("20220101.tar.gz", existingOutput);
+
+  await handle(
+    scheduledEventFactory.build({
+      time: "2022-01-02T12:00:00Z",
+      detail: { overwrite: true },
+    })
+  );
+
+  const [entry] = await extractOutputObject("20220101.tar.gz");
+  const data = (await fs.readFile(entry.fullPath)).toString();
+  expect(data).toEqual("updated output");
+});
+
 const extractOutputObject = async (key: string) => {
   const buffer = await getOutputObject(key);
   const tempDir = await makeTempDir("output");
