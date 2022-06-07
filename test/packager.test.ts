@@ -65,11 +65,11 @@ const handle = (event: ScheduledEvent) =>
 
 test("archives all logs for the previous service day", async () => {
   const objects = [
-    ["2021-12-31/ocs", "prev day\n"],
-    ["2022-01-01/ocs1", "one\ntwo\n"],
-    ["2022-01-01/ocs2", "three\nfour\nfive\n"],
-    ["2022-01-01/ocs3", "six\n"],
-    ["2022-01-02/ocs", "next day\n"],
+    ["2021-12-31/ocs", "prev day"],
+    ["2022-01-01/ocs1", "one\ntwo"],
+    ["2022-01-01/ocs2", "three\nfour\nfive"],
+    ["2022-01-01/ocs3", "six"],
+    ["2022-01-02/ocs", "next day"],
   ];
   for (const [key, data] of objects) await putSourceObject(key, data);
 
@@ -82,7 +82,7 @@ test("archives all logs for the previous service day", async () => {
 });
 
 test("doesn't write the output object if it already exists", async () => {
-  const existingOutput = Buffer.from("existing output");
+  const existingOutput = Buffer.from("existing output\n");
   await putSourceObject("2022-01-01/ocs", "new data");
   await putOutputObject("20220101.tar.gz", existingOutput);
 
@@ -95,7 +95,7 @@ test("doesn't write the output object if it already exists", async () => {
 });
 
 test("overwrites the output object if an option is provided", async () => {
-  const existingOutput = Buffer.from("existing output");
+  const existingOutput = Buffer.from("existing output\n");
   await putSourceObject("2022-01-01/ocs", "updated output");
   await putOutputObject("20220101.tar.gz", existingOutput);
 
@@ -108,7 +108,7 @@ test("overwrites the output object if an option is provided", async () => {
 
   const [entry] = await extractOutputObject("20220101.tar.gz");
   const data = (await fs.readFile(entry.fullPath)).toString();
-  expect(data).toEqual("updated output");
+  expect(data).toEqual("updated output\n");
 });
 
 const extractOutputObject = async (key: string) => {

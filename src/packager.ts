@@ -72,6 +72,8 @@ export const handler: ScheduledHandler = Sentry.wrapHandler(
  * The filename can contain directories, which are created if they don't exist.
  * If the file already exists, it will be overwritten.
  *
+ * A newline is appended after each object, including the last one.
+ *
  * [1]: https://docs.aws.amazon.com/AmazonS3/latest/userguide/ListingKeysUsingAPIs.html
  */
 const concatAllObjects = async (
@@ -100,6 +102,7 @@ const concatAllObjects = async (
         throw exception("BadS3Response", JSON.stringify(metadata));
 
       await fs.appendFile(outputFile, data);
+      await fs.appendFile(outputFile, "\n");
     }
   }
 
