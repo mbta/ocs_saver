@@ -21,7 +21,7 @@ import { Environment } from "./packager/structs";
 Sentry.init();
 
 export const handler: ScheduledHandler = Sentry.wrapHandler(
-  async ({ time }) => {
+  async ({ detail, time }) => {
     // Copy `process.env` to avoid `optional` properties becoming the string
     // "undefined" instead of real `undefined`; this may have to do with its
     // automatic string conversion behavior
@@ -36,8 +36,9 @@ export const handler: ScheduledHandler = Sentry.wrapHandler(
     const serviceDay = localFromISO(time).minus({ days: 1 }).toISODate();
     const outputLabel = serviceDay.replace(/-/g, "");
     const outputKey = path.posix.join(outputPrefix, `${outputLabel}.tar.gz`);
+    const overwrite = detail?.overwrite ?? false;
 
-    if (await objectExists(client, bucket, outputKey))
+    if (!overwrite && (await objectExists(client, bucket, outputKey)))
       throw exception("OutputKeyExists", outputKey);
 
     const archiveRoot = await concatAllObjects(

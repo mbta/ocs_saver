@@ -61,9 +61,13 @@ This example uses async invocation, since a successful run can take longer than
 the CLI's default read timeout. You'll have to use Splunk to monitor the status
 of the run (filter by `source=lambda:ocs-saver-dev-packager-logs`).
 
-Note that currently the packager intentionally fails when its output file
-already exists; if you want to regenerate an output file, it must first be
-deleted from S3.
+Note by default the packager intentionally fails when its output file already
+exists. If you want to regenerate an output file, add the `overwrite` option to
+the payload:
+
+```
+{"time": "2022-01-01T12:00:00Z", "detail": {"overwrite": true}}
+```
 
 
 ## Architecture
