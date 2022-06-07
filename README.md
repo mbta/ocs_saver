@@ -50,15 +50,20 @@ the prod environment packager.
 
 ```
 aws lambda invoke \
+  --invocation-type Event \
   --function-name ocs-saver-dev-packager \
   --payload '{"time": "2022-01-01T12:00:00Z"}' \
-  --cli-binary-format raw-in-base64-out
+  --cli-binary-format raw-in-base64-out \
+  /dev/stdout
 ```
 
-On a failure, the command output will include `"FunctionError": "Unhandled"`,
-otherwise it will not. Note that currently the packager intentionally fails
-when its output file already exists; if you want to regenerate an output file,
-it must first be deleted from S3.
+This example uses async invocation, since a successful run can take longer than
+the CLI's default read timeout. You'll have to use Splunk to monitor the status
+of the run (filter by `source=lambda:ocs-saver-dev-packager-logs`).
+
+Note that currently the packager intentionally fails when its output file
+already exists; if you want to regenerate an output file, it must first be
+deleted from S3.
 
 
 ## Architecture
