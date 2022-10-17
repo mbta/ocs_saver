@@ -1,6 +1,7 @@
 import fs from "fs/promises";
 import os from "os";
 import path from "path";
+import readline from "readline";
 import stream from "stream";
 import {
   GetObjectCommand,
@@ -17,6 +18,7 @@ import { create as createTar } from "tar";
 import { localFromISO } from "./datetime";
 import { exception } from "./errors";
 import { Environment } from "./packager/structs";
+import { OCSEvent } from "./processor/structs";
 
 Sentry.init();
 
@@ -37,14 +39,20 @@ export const handler: ScheduledHandler = Sentry.wrapHandler(
     const outputLabel = serviceDay.replace(/-/g, "");
     const outputKey = path.posix.join(outputPrefix, `${outputLabel}.tar.gz`);
     const overwrite = detail?.overwrite ?? false;
+    const recover = detail?.recover ?? false;
 
-    if (!overwrite && (await objectExists(client, bucket, outputKey)))
+    if (!(overwrite || recover) && (await objectExists(client, bucket, outputKey)))
       throw exception("OutputKeyExists", outputKey);
+
+    const recoveryPrefix = recover ? path.posix.join("failed", outputPrefix, "processing-failed") : "";
 
     const archiveRoot = await concatAllObjects(
       client,
       bucket,
-      path.posix.join(sourcePrefix, serviceDay),
+      sourcePrefix,
+      outputPrefix, 
+      serviceDay,
+      recoveryPrefix,
       // Mimic the directory structure of the old OCS.LogUploader from RTR
       path.join("root", "persistent-state", `${outputLabel}.txt`)
     );
@@ -79,13 +87,76 @@ export const handler: ScheduledHandler = Sentry.wrapHandler(
 const concatAllObjects = async (
   client: S3Client,
   bucket: string,
-  prefix: string,
+  sourcePrefix: string,
+  outputPrefix: string,
+  serviceDay: string,
+  recoveryPrefix: string,
   filename: string
 ) => {
+  const prefix = path.posix.join(sourcePrefix, serviceDay);
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "temp-"));
   const outputPath = path.join(tempDir, filename);
   await fs.mkdir(path.dirname(outputPath), { recursive: true });
   const outputFile = await fs.open(outputPath, "w");
+
+  if (recoveryPrefix) {
+    for await (const {
+      $metadata: metadata,
+      Contents: objects,
+    } of paginateListObjectsV2({ client }, { Bucket: bucket, Prefix: recoveryPrefix})) {
+      if (objects === undefined)
+        throw exception("BadS3Response", JSON.stringify(metadata));
+
+      for (const { Key: key } of objects) {
+        const command = new GetObjectCommand({ Bucket: bucket, Key: key });
+        const { $metadata: metadata, Body: data } = await client.send(command);
+
+        if (data === undefined)
+          throw exception("BadS3Response", JSON.stringify(metadata));
+
+        if (key && key.startsWith(`ocs-saver-${outputPrefix}-1-${serviceDay}`)) {
+          const command = new GetObjectCommand({ Bucket: bucket, Key: key });
+          const { $metadata: metadata, Body: data } = await client.send(command);
+
+          if (data === undefined)
+            throw exception("BadS3Response", JSON.stringify(metadata));
+
+          const recoveredFile = await fs.open(path.join(tempDir, key), "w");
+
+          const lines = readline.createInterface({
+            input: data,
+          });
+
+          for await (const line of lines) {
+            const { rawData } = JSON.parse(line);
+            const eventData = JSON.parse(Buffer.from(rawData, "base64").toString());
+            const { time, data: { raw } } = struct(eventData, OCSEvent);
+            const datetime = localFromISO(time);
+            // Mimic the timestamp prepended by the old OCS.LogUploader from RTR
+            const timestampedRaw = `${datetime.toFormat("MM/dd/yy,HH:mm:ss")},${raw}`;
+
+            await fs.appendFile(recoveredFile, timestampedRaw);
+            await fs.appendFile(recoveredFile, "\n");
+          }
+          await recoveredFile.close();
+
+          const recoveredKey = path.posix.join(sourcePrefix, key);
+
+          const upload = new Upload({
+            client,
+            params: {
+              Body: recoveredFile,
+              Bucket: bucket,
+              ContentType: "application/gzip",
+              Key: recoveredKey,
+            },
+          });
+      
+          await upload.done();
+        }
+      }
+    }
+  }
 
   for await (const {
     $metadata: metadata,
