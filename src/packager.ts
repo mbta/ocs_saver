@@ -41,16 +41,21 @@ export const handler: ScheduledHandler = Sentry.wrapHandler(
     const overwrite = detail?.overwrite ?? false;
     const recover = detail?.recover ?? false;
 
-    if (!(overwrite || recover) && (await objectExists(client, bucket, outputKey)))
+    if (
+      !(overwrite || recover) &&
+      (await objectExists(client, bucket, outputKey))
+    )
       throw exception("OutputKeyExists", outputKey);
 
-    const recoveryPrefix = recover ? path.posix.join("failed", outputPrefix, "processing-failed") : "";
+    const recoveryPrefix = recover
+      ? path.posix.join("failed", outputPrefix, "processing-failed")
+      : "";
 
     const archiveRoot = await concatAllObjects(
       client,
       bucket,
       sourcePrefix,
-      outputPrefix, 
+      outputPrefix,
       serviceDay,
       recoveryPrefix,
       // Mimic the directory structure of the old OCS.LogUploader from RTR
@@ -103,7 +108,10 @@ const concatAllObjects = async (
     for await (const {
       $metadata: metadata,
       Contents: objects,
-    } of paginateListObjectsV2({ client }, { Bucket: bucket, Prefix: recoveryPrefix})) {
+    } of paginateListObjectsV2(
+      { client },
+      { Bucket: bucket, Prefix: recoveryPrefix }
+    )) {
       if (objects === undefined)
         throw exception("BadS3Response", JSON.stringify(metadata));
 
@@ -114,9 +122,14 @@ const concatAllObjects = async (
         if (data === undefined)
           throw exception("BadS3Response", JSON.stringify(metadata));
 
-        if (key && key.startsWith(`ocs-saver-${outputPrefix}-1-${serviceDay}`)) {
+        if (
+          key &&
+          key.startsWith(`ocs-saver-${outputPrefix}-1-${serviceDay}`)
+        ) {
           const command = new GetObjectCommand({ Bucket: bucket, Key: key });
-          const { $metadata: metadata, Body: data } = await client.send(command);
+          const { $metadata: metadata, Body: data } = await client.send(
+            command
+          );
 
           if (data === undefined)
             throw exception("BadS3Response", JSON.stringify(metadata));
@@ -129,11 +142,18 @@ const concatAllObjects = async (
 
           for await (const line of lines) {
             const { rawData } = JSON.parse(line);
-            const eventData = JSON.parse(Buffer.from(rawData, "base64").toString());
-            const { time, data: { raw } } = struct(eventData, OCSEvent);
+            const eventData = JSON.parse(
+              Buffer.from(rawData, "base64").toString()
+            );
+            const {
+              time,
+              data: { raw },
+            } = struct(eventData, OCSEvent);
             const datetime = localFromISO(time);
             // Mimic the timestamp prepended by the old OCS.LogUploader from RTR
-            const timestampedRaw = `${datetime.toFormat("MM/dd/yy,HH:mm:ss")},${raw}`;
+            const timestampedRaw = `${datetime.toFormat(
+              "MM/dd/yy,HH:mm:ss"
+            )},${raw}`;
 
             await fs.appendFile(recoveredFile, timestampedRaw);
             await fs.appendFile(recoveredFile, "\n");
@@ -151,7 +171,7 @@ const concatAllObjects = async (
               Key: recoveredKey,
             },
           });
-      
+
           await upload.done();
         }
       }
