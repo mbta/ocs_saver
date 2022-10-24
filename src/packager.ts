@@ -4,7 +4,6 @@ import path from "path";
 import readline from "readline";
 import stream from "stream";
 import {
-  GetObjectCommand,
   HeadObjectCommand,
   NotFound,
   S3Client,
@@ -18,7 +17,6 @@ import { create as createTar } from "tar";
 import { localFromISO } from "./datetime";
 import { exception } from "./errors";
 import { Environment } from "./packager/structs";
-import { OCSEvent } from "./processor/structs";
 import { recoverLine, safeSend } from "./util";
 
 Sentry.init();
@@ -111,7 +109,13 @@ const concatAllObjects = async (
       Contents: objects,
     } of paginateListObjectsV2(
       { client },
-      { Bucket: bucket, Prefix: path.join(recoveryPrefix, `ocs-saver-${outputPrefix}-1-${serviceDay}`) }
+      {
+        Bucket: bucket,
+        Prefix: path.join(
+          recoveryPrefix,
+          `ocs-saver-${outputPrefix}-1-${serviceDay}`
+        ),
+      }
     )) {
       if (objects === undefined)
         throw exception("BadS3Response", JSON.stringify(metadata));

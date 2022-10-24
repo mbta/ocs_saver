@@ -5,7 +5,7 @@ test("recovers line from failed attempt log", async () => {
 
   expect(recoverLine(line)).toEqual(
     `06/08/22,13:42:30,166744,RGPS,13:42:29,G,U15-141-631,3675,42.3481883333333,71.1404983333333,0.00,18.94\n`
-  )
+  );
 });
 
 test("returns an empty string on missing rawData", async () => {
