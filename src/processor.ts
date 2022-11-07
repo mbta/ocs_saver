@@ -17,12 +17,16 @@ export const handler: Handler = Sentry.wrapHandler(async ({ records }) => ({
 
 const transformRecord = ({ recordId, data }: EventRecord): ResultRecord => {
   try {
-    const event = JSON.parse(Buffer.from(data, "base64").toString());
-    const { time, data: { raw } } = struct(event, OCSEvent); // prettier-ignore
+    const events = wrapList(JSON.parse(Buffer.from(data, "base64").toString()));
+    const {time} = struct(events[0], OCSEvent); // prettier-ignore
     const datetime = localFromISO(time);
-    // Mimic the timestamp prepended by the old OCS.LogUploader from RTR
-    const timestampedRaw = `${datetime.toFormat("MM/dd/yy,HH:mm:ss")},${raw}`;
-
+    const formattedTime = datetime.toFormat("MM/dd/yy,HH:mm:ss");
+    const timestampedRaw = events
+      .map((eventRaw) => {
+        const {data: { raw }} = struct(eventRaw, OCSEvent); // prettier-ignore
+        return `${formattedTime},${raw}`;
+      })
+      .join("\n");
     return {
       recordId,
       result: "Ok",
@@ -34,6 +38,16 @@ const transformRecord = ({ recordId, data }: EventRecord): ResultRecord => {
     return { recordId, result: "ProcessingFailed", data };
   }
 };
+
+function wrapList<T>(item_or_items: T | Array<T>): Array<T> {
+  if (Array.isArray(item_or_items)) {
+    return item_or_items;
+  } else if (item_or_items === null || item_or_items === undefined) {
+    return [];
+  } else {
+    return [item_or_items];
+  }
+}
 
 // Only capture an error once per run; if many records throw errors and we try
 // to capture them all, the capturing itself can take a long time and cause the
