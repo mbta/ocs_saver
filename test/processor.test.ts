@@ -25,6 +25,21 @@ const buildKinesisRecord = (id: string, ocsEventAttrs: Partial<OCSEvent>) =>
     { transient: { encodeEvent: ocsEventFactory.build(ocsEventAttrs) } }
   );
 
+const buildKinesisBatchRecord = (
+  id: string,
+  ocsEventsAttrs: Array<Partial<OCSEvent>>
+) =>
+  kinesisRecordFactory.build(
+    { recordId: id },
+    {
+      transient: {
+        encodeData: JSON.stringify(
+          ocsEventsAttrs.map((attrs) => ocsEventFactory.build(attrs))
+        ),
+      },
+    }
+  );
+
 // prettier-ignore
 const decodeRecordData = (record: FirehoseTransformationResultRecord) =>
   ({ ...record, data: Buffer.from(record.data, "base64").toString() });
@@ -52,6 +67,33 @@ test("transforms records to timestamped raw OCS messages", async () => {
     {
       data: "03/01/22,00:00:03,102,DIAG,00:00:02,test2",
       recordId: "rec2",
+      result: "Ok",
+    },
+  ]);
+});
+
+test("transforms batch records to timestamped raw OCS messages", async () => {
+  const event = buildFirehoseEvent([
+    buildKinesisBatchRecord("rec1", [
+      {
+        time: "2022-03-01T05:00:02Z",
+        data: { raw: "101,DIAG,00:00:01,test1" },
+      },
+      {
+        // NB: only the first time is used, so this is ignored.
+        time: "2022-03-01T05:00:03Z",
+        data: { raw: "102,DIAG,00:00:02,test2" },
+      },
+    ]),
+  ]);
+
+  const { records } = (await handle(event)) as FirehoseTransformationResult;
+  expect(records.map(decodeRecordData)).toMatchObject([
+    {
+      data: `03/01/22,00:00:02,101,DIAG,00:00:01,test1
+03/01/22,00:00:02,102,DIAG,00:00:02,test2`,
+      metadata: { partitionKeys: { serviceDay: "2022-02-28" } },
+      recordId: "rec1",
       result: "Ok",
     },
   ]);
