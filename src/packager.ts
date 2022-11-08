@@ -99,11 +99,19 @@ const concatAllObjects = async (
 ) => {
   const prefix = path.posix.join(sourcePrefix, serviceDay);
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "temp-"));
+  const recoveryTempDir = await fs.mkdtemp(
+    path.join(os.tmpdir(), "recovery-temp-")
+  );
   const outputPath = path.join(tempDir, filename);
   await fs.mkdir(path.dirname(outputPath), { recursive: true });
   const outputFile = await fs.open(outputPath, "w");
 
   if (recoveryPrefix) {
+    const recoveryPath = path.join(
+      recoveryPrefix,
+      `ocs-saver-${outputPrefix}-1-${serviceDay}`
+    );
+
     for await (const {
       $metadata: metadata,
       Contents: objects,
@@ -111,10 +119,7 @@ const concatAllObjects = async (
       { client },
       {
         Bucket: bucket,
-        Prefix: path.join(
-          recoveryPrefix,
-          `ocs-saver-${outputPrefix}-1-${serviceDay}`
-        ),
+        Prefix: recoveryPath,
       }
     )) {
       if (objects === undefined)
@@ -123,7 +128,13 @@ const concatAllObjects = async (
       for (const { Key: key } of objects) {
         if (key) {
           const { Body: data } = await safeSend(client, bucket, key);
-          const recoveredFile = await fs.open(path.join(tempDir, key), "w");
+          await fs.mkdir(path.dirname(path.join(recoveryTempDir, key)), {
+            recursive: true,
+          });
+          const recoveredFile = await fs.open(
+            path.join(recoveryTempDir, key),
+            "w"
+          );
 
           const lines = readline.createInterface({
             input: data,
@@ -134,17 +145,18 @@ const concatAllObjects = async (
           }
           await recoveredFile.close();
 
-          const recoveredKey = path.posix.join(sourcePrefix, key);
+          const recoveredKey = path.posix.join(prefix, key);
 
           const upload = new Upload({
             client,
             params: {
-              Body: recoveredFile,
+              Body: await fs.readFile(path.join(recoveryTempDir, key)),
               Bucket: bucket,
               Key: recoveredKey,
             },
           });
 
+          await recoveredFile.close();
           await upload.done();
         }
       }
