@@ -161,7 +161,8 @@ const concatAllObjects = async (
     for (const { Key: key } of objects) {
       const { Body: data } = await safeSend(client, bucket, key);
 
-      await fs.appendFile(outputFile, `${data}\n`);
+      await fs.appendFile(outputFile, data);
+      await fs.appendFile(outputFile, "\n");
     }
   }
 
