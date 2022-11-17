@@ -25,12 +25,26 @@ export const safeSend = async (
 
 export const recoverLine = (line: string): string => {
   const { rawData } = JSON.parse(line);
-  const eventData = JSON.parse(Buffer.from(rawData, "base64").toString());
-  const {
-    time,
-    data: { raw },
-  } = struct(eventData, OCSEvent);
+  const events = wrapList(JSON.parse(Buffer.from(rawData, "base64").toString()));
+  const { time } = struct(events[0], OCSEvent);
   const datetime = localFromISO(time);
+  const formattedTime = datetime.toFormat("MM/dd/yy,HH:mm:ss");
+  const timestampedRaw = events
+      .map((eventRaw) => {
+        const {data: { raw }} = struct(eventRaw, OCSEvent); // prettier-ignore
+        return `${formattedTime},${raw}`;
+      })
+      .join("\n");
   // Mimic the timestamp prepended by the old OCS.LogUploader from RTR
-  return `${datetime.toFormat("MM/dd/yy,HH:mm:ss")},${raw}\n`;
+  return `${timestampedRaw}\n`;
 };
+
+export function wrapList<T>(item_or_items: T | Array<T>): Array<T> {
+  if (Array.isArray(item_or_items)) {
+    return item_or_items;
+  } else if (item_or_items === null || item_or_items === undefined) {
+    return [];
+  } else {
+    return [item_or_items];
+  }
+}
