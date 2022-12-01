@@ -24,6 +24,7 @@ export const safeSend = async (
 };
 
 export const recoverLine = (line: string): string => {
+  console.info(line);
   const { rawData } = JSON.parse(line);
   const events = wrapList(
     JSON.parse(Buffer.from(rawData, "base64").toString())
