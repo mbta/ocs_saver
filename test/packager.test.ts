@@ -114,7 +114,9 @@ test("overwrites the output object if an option is provided", async () => {
 test("recovers old inputs if output did not succeed for a given date", async () => {
   await putFailedProcessingObject(
     "ocs-saver-test-output-1-2022-01-01/failed",
-    `{"attemptsMade":4,"arrivalTimestamp":1654710150135,"errorCode":"Lambda.FunctionTimedOut","errorMessage":"The Lambda function invocation timed out. Increase the Timeout setting in the Lambda function.","attemptEndingTimestamp":1654710238263,"rawData":"eyJkYXRhIjp7InJhdyI6IjE2Njc0NCxSR1BTLDEzOjQyOjI5LEcsVTE1LTE0MS02MzEsMzY3NSw0Mi4zNDgxODgzMzMzMzMzLDcxLjE0MDQ5ODMzMzMzMzMsMC4wMCwxOC45NCJ9LCJpZCI6IlpKd3Y3WUF0M21PS3BIaGZyUWZIQ2hHWmFpMD0iLCJwYXJ0aXRpb25rZXkiOiJ7MTAuMTA4LjQ2LjE5ODo4MDgxIC0+IDEwLjE5OC4wLjM0OjQzNDE0fSIsInNvdXJjZSI6Im9wc3RlY2gzLm1idGEuY29tL3RyaWtlIiwic3BlY3ZlcnNpb24iOiIxLjAiLCJ0aW1lIjoiMjAyMi0wNi0wOFQxNzo0MjozMC4wOTIwMDBaIiwidHlwZSI6ImNvbS5tYnRhLm9jcy5yYXdfbWVzc2FnZSJ9","lambdaArn":"test"}`
+    `{"attemptsMade":4,"arrivalTimestamp":1654710150135,"errorCode":"Lambda.FunctionTimedOut","errorMessage":"The Lambda function invocation timed out. Increase the Timeout setting in the Lambda function.","attemptEndingTimestamp":1654710238263,"rawData":"eyJkYXRhIjp7InJhdyI6IjE2Njc0NCxSR1BTLDEzOjQyOjI5LEcsVTE1LTE0MS02MzEsMzY3NSw0Mi4zNDgxODgzMzMzMzMzLDcxLjE0MDQ5ODMzMzMzMzMsMC4wMCwxOC45NCJ9LCJpZCI6IlpKd3Y3WUF0M21PS3BIaGZyUWZIQ2hHWmFpMD0iLCJwYXJ0aXRpb25rZXkiOiJ7MTAuMTA4LjQ2LjE5ODo4MDgxIC0+IDEwLjE5OC4wLjM0OjQzNDE0fSIsInNvdXJjZSI6Im9wc3RlY2gzLm1idGEuY29tL3RyaWtlIiwic3BlY3ZlcnNpb24iOiIxLjAiLCJ0aW1lIjoiMjAyMi0wNi0wOFQxNzo0MjozMC4wOTIwMDBaIiwidHlwZSI6ImNvbS5tYnRhLm9jcy5yYXdfbWVzc2FnZSJ9","lambdaArn":"test"}
+{"attemptsMade":4,"arrivalTimestamp":1654705063218,"errorCode":"Lambda.FunctionError","errorMessage":"The Lambda function was successfully invoked but it returned an error result.","attemptEndingTimestamp":1654705152242,"rawData":"eyJkYXRhIjp7InJhdyI6IjUzNDAyLFJHUFMsMTI6MTc6NDMsRyxVMTYtMzUwLTcxMywzMDg3LDQyLjI2OTQyNjY2NjY2NjcsNzEuMDc3MDgzMzMzMzMzMywzMS45NCw3MS45OSJ9LCJpZCI6IjlJUndnZWkweHJmY3JkTEZ1TU5pQkx3dFRXWT0iLCJwYXJ0aXRpb25rZXkiOiJ7MTAuMTA4LjQ2LjE5ODo4MDgxIC0+IDEwLjE5OC4wLjM0OjQzNDE0fSIsInNvdXJjZSI6Im9wc3RlY2gzLm1idGEuY29tL3RyaWtlIiwic3BlY3ZlcnNpb24iOiIxLjAiLCJ0aW1lIjoiMjAyMi0wNi0wOFQxNjoxNzo0My4xODMwMDBaIiwidHlwZSI6ImNvbS5tYnRhLm9jcy5yYXdfbWVzc2FnZSJ9","lambdaArn":"test"}
+`
   );
 
   await handle(
@@ -127,7 +129,10 @@ test("recovers old inputs if output did not succeed for a given date", async () 
   const [entry] = await extractOutputObject("20220101.tar.gz");
   const data = (await fs.readFile(entry.fullPath)).toString();
   expect(data).toEqual(
-    "06/08/22,13:42:30,166744,RGPS,13:42:29,G,U15-141-631,3675,42.3481883333333,71.1404983333333,0.00,18.94\n\n"
+    `06/08/22,13:42:30,166744,RGPS,13:42:29,G,U15-141-631,3675,42.3481883333333,71.1404983333333,0.00,18.94
+06/08/22,12:17:43,53402,RGPS,12:17:43,G,U16-350-713,3087,42.2694266666667,71.0770833333333,31.94,71.99
+
+`
   );
 });
 
