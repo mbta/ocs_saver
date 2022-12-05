@@ -145,12 +145,8 @@ const concatAllObjects = async (
           }
           await recoveredFile.close();
 
-          const recoveredKey = path.posix.join(prefix, key);
-          console.info("RECOVERED KEY", recoveredKey)
-          console.info("PREFIX", prefix)
-          console.info("KEY", key)
-          console.info("OUTPUT PATH", outputPath);
-          console.info("SOURCE PREFIX", sourcePrefix);
+          const [fileName] = key.split("/").slice(-1);
+          const recoveredKey = path.posix.join(prefix, fileName);
           const upload = new Upload({
             client,
             params: {
