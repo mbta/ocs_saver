@@ -127,37 +127,41 @@ const concatAllObjects = async (
 
       for (const { Key: key } of objects) {
         if (key) {
-          const { Body: data } = await safeSend(client, bucket, key);
-          await fs.mkdir(path.dirname(path.join(recoveryTempDir, key)), {
-            recursive: true,
-          });
-          const recoveredFile = await fs.open(
-            path.join(recoveryTempDir, key),
-            "w"
-          );
-
-          const lines = readline.createInterface({
-            input: data,
-          });
-
-          for await (const line of lines) {
-            await fs.appendFile(recoveredFile, recoverLine(line));
-          }
-          await recoveredFile.close();
-
           const [fileName] = key.split("/").slice(-1);
           const recoveredKey = path.posix.join(prefix, fileName);
-          const upload = new Upload({
-            client,
-            params: {
-              Body: await fs.readFile(path.join(recoveryTempDir, key)),
-              Bucket: bucket,
-              Key: recoveredKey,
-            },
-          });
+          const recoveredFileExists = await objectExists(client, bucket, recoveredKey);
+          
+          if (!recoveredFileExists) {
+            const { Body: data } = await safeSend(client, bucket, key);
+            await fs.mkdir(path.dirname(path.join(recoveryTempDir, key)), {
+              recursive: true,
+            });
+            const recoveredFile = await fs.open(
+              path.join(recoveryTempDir, key),
+              "w"
+            );
 
-          await recoveredFile.close();
-          await upload.done();
+            const lines = readline.createInterface({
+              input: data,
+            });
+
+            for await (const line of lines) {
+              await fs.appendFile(recoveredFile, recoverLine(line));
+            }
+            await recoveredFile.close();
+
+            const upload = new Upload({
+              client,
+              params: {
+                Body: await fs.readFile(path.join(recoveryTempDir, key)),
+                Bucket: bucket,
+                Key: recoveredKey,
+              },
+            });
+
+            await recoveredFile.close();
+            await upload.done();
+          }
         }
       }
     }
