@@ -129,8 +129,12 @@ const concatAllObjects = async (
         if (key) {
           const [fileName] = key.split("/").slice(-1);
           const recoveredKey = path.posix.join(prefix, fileName);
-          const recoveredFileExists = await objectExists(client, bucket, recoveredKey);
-          
+          const recoveredFileExists = await objectExists(
+            client,
+            bucket,
+            recoveredKey
+          );
+
           if (!recoveredFileExists) {
             const { Body: data } = await safeSend(client, bucket, key);
             await fs.mkdir(path.dirname(path.join(recoveryTempDir, key)), {
