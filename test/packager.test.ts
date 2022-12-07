@@ -111,6 +111,75 @@ test("overwrites the output object if an option is provided", async () => {
   expect(data).toEqual("updated output\n");
 });
 
+test("recovers old inputs if output did not succeed for a given date", async () => {
+  await putFailedProcessingObject(
+    "ocs-saver-test-output-1-2022-01-01/failed",
+    `{"attemptsMade":4,"arrivalTimestamp":1654710150135,"errorCode":"Lambda.FunctionTimedOut","errorMessage":"The Lambda function invocation timed out. Increase the Timeout setting in the Lambda function.","attemptEndingTimestamp":1654710238263,"rawData":"eyJkYXRhIjp7InJhdyI6IjE2Njc0NCxSR1BTLDEzOjQyOjI5LEcsVTE1LTE0MS02MzEsMzY3NSw0Mi4zNDgxODgzMzMzMzMzLDcxLjE0MDQ5ODMzMzMzMzMsMC4wMCwxOC45NCJ9LCJpZCI6IlpKd3Y3WUF0M21PS3BIaGZyUWZIQ2hHWmFpMD0iLCJwYXJ0aXRpb25rZXkiOiJ7MTAuMTA4LjQ2LjE5ODo4MDgxIC0+IDEwLjE5OC4wLjM0OjQzNDE0fSIsInNvdXJjZSI6Im9wc3RlY2gzLm1idGEuY29tL3RyaWtlIiwic3BlY3ZlcnNpb24iOiIxLjAiLCJ0aW1lIjoiMjAyMi0wNi0wOFQxNzo0MjozMC4wOTIwMDBaIiwidHlwZSI6ImNvbS5tYnRhLm9jcy5yYXdfbWVzc2FnZSJ9","lambdaArn":"test"}
+{"attemptsMade":4,"arrivalTimestamp":1654705063218,"errorCode":"Lambda.FunctionError","errorMessage":"The Lambda function was successfully invoked but it returned an error result.","attemptEndingTimestamp":1654705152242,"rawData":"eyJkYXRhIjp7InJhdyI6IjUzNDAyLFJHUFMsMTI6MTc6NDMsRyxVMTYtMzUwLTcxMywzMDg3LDQyLjI2OTQyNjY2NjY2NjcsNzEuMDc3MDgzMzMzMzMzMywzMS45NCw3MS45OSJ9LCJpZCI6IjlJUndnZWkweHJmY3JkTEZ1TU5pQkx3dFRXWT0iLCJwYXJ0aXRpb25rZXkiOiJ7MTAuMTA4LjQ2LjE5ODo4MDgxIC0+IDEwLjE5OC4wLjM0OjQzNDE0fSIsInNvdXJjZSI6Im9wc3RlY2gzLm1idGEuY29tL3RyaWtlIiwic3BlY3ZlcnNpb24iOiIxLjAiLCJ0aW1lIjoiMjAyMi0wNi0wOFQxNjoxNzo0My4xODMwMDBaIiwidHlwZSI6ImNvbS5tYnRhLm9jcy5yYXdfbWVzc2FnZSJ9","lambdaArn":"test"}
+`
+  );
+
+  await handle(
+    scheduledEventFactory.build({
+      time: "2022-01-02T12:00:00Z",
+      detail: { recover: true },
+    })
+  );
+
+  const [entry] = await extractOutputObject("20220101.tar.gz");
+  const data = (await fs.readFile(entry.fullPath)).toString();
+  expect(data).toEqual(
+    `06/08/22,13:42:30,166744,RGPS,13:42:29,G,U15-141-631,3675,42.3481883333333,71.1404983333333,0.00,18.94
+06/08/22,12:17:43,53402,RGPS,12:17:43,G,U16-350-713,3087,42.2694266666667,71.0770833333333,31.94,71.99
+
+`
+  );
+});
+
+test("does not re-process failed inputs if source file already exists", async () => {
+  await putFailedProcessingObject(
+    "ocs-saver-test-output-1-2022-01-01-failed1",
+    `{"attemptsMade":4,"arrivalTimestamp":1654710150135,"errorCode":"Lambda.FunctionTimedOut","errorMessage":"The Lambda function invocation timed out. Increase the Timeout setting in the Lambda function.","attemptEndingTimestamp":1654710238263,"rawData":"eyJkYXRhIjp7InJhdyI6IjE2Njc0NCxSR1BTLDEzOjQyOjI5LEcsVTE1LTE0MS02MzEsMzY3NSw0Mi4zNDgxODgzMzMzMzMzLDcxLjE0MDQ5ODMzMzMzMzMsMC4wMCwxOC45NCJ9LCJpZCI6IlpKd3Y3WUF0M21PS3BIaGZyUWZIQ2hHWmFpMD0iLCJwYXJ0aXRpb25rZXkiOiJ7MTAuMTA4LjQ2LjE5ODo4MDgxIC0+IDEwLjE5OC4wLjM0OjQzNDE0fSIsInNvdXJjZSI6Im9wc3RlY2gzLm1idGEuY29tL3RyaWtlIiwic3BlY3ZlcnNpb24iOiIxLjAiLCJ0aW1lIjoiMjAyMi0wNi0wOFQxNzo0MjozMC4wOTIwMDBaIiwidHlwZSI6ImNvbS5tYnRhLm9jcy5yYXdfbWVzc2FnZSJ9","lambdaArn":"test"}
+{"attemptsMade":4,"arrivalTimestamp":1654705063218,"errorCode":"Lambda.FunctionError","errorMessage":"The Lambda function was successfully invoked but it returned an error result.","attemptEndingTimestamp":1654705152242,"rawData":"eyJkYXRhIjp7InJhdyI6IjUzNDAyLFJHUFMsMTI6MTc6NDMsRyxVMTYtMzUwLTcxMywzMDg3LDQyLjI2OTQyNjY2NjY2NjcsNzEuMDc3MDgzMzMzMzMzMywzMS45NCw3MS45OSJ9LCJpZCI6IjlJUndnZWkweHJmY3JkTEZ1TU5pQkx3dFRXWT0iLCJwYXJ0aXRpb25rZXkiOiJ7MTAuMTA4LjQ2LjE5ODo4MDgxIC0+IDEwLjE5OC4wLjM0OjQzNDE0fSIsInNvdXJjZSI6Im9wc3RlY2gzLm1idGEuY29tL3RyaWtlIiwic3BlY3ZlcnNpb24iOiIxLjAiLCJ0aW1lIjoiMjAyMi0wNi0wOFQxNjoxNzo0My4xODMwMDBaIiwidHlwZSI6ImNvbS5tYnRhLm9jcy5yYXdfbWVzc2FnZSJ9","lambdaArn":"test"}
+`
+  );
+
+  await putFailedProcessingObject(
+    "ocs-saver-test-output-1-2022-01-01-failed2",
+    `{"attemptsMade":4,"arrivalTimestamp":1654710150135,"errorCode":"Lambda.FunctionTimedOut","errorMessage":"The Lambda function invocation timed out. Increase the Timeout setting in the Lambda function.","attemptEndingTimestamp":1654710238263,"rawData":"eyJkYXRhIjp7InJhdyI6IjE2Njc0NCxSR1BTLDEzOjQyOjI5LEcsVTE1LTE0MS02MzEsMzY3NSw0Mi4zNDgxODgzMzMzMzMzLDcxLjE0MDQ5ODMzMzMzMzMsMC4wMCwxOC45NCJ9LCJpZCI6IlpKd3Y3WUF0M21PS3BIaGZyUWZIQ2hHWmFpMD0iLCJwYXJ0aXRpb25rZXkiOiJ7MTAuMTA4LjQ2LjE5ODo4MDgxIC0+IDEwLjE5OC4wLjM0OjQzNDE0fSIsInNvdXJjZSI6Im9wc3RlY2gzLm1idGEuY29tL3RyaWtlIiwic3BlY3ZlcnNpb24iOiIxLjAiLCJ0aW1lIjoiMjAyMi0wNi0wOFQxNzo0MjozMC4wOTIwMDBaIiwidHlwZSI6ImNvbS5tYnRhLm9jcy5yYXdfbWVzc2FnZSJ9","lambdaArn":"test"}
+{"attemptsMade":4,"arrivalTimestamp":1654705063218,"errorCode":"Lambda.FunctionError","errorMessage":"The Lambda function was successfully invoked but it returned an error result.","attemptEndingTimestamp":1654705152242,"rawData":"eyJkYXRhIjp7InJhdyI6IjUzNDAyLFJHUFMsMTI6MTc6NDMsRyxVMTYtMzUwLTcxMywzMDg3LDQyLjI2OTQyNjY2NjY2NjcsNzEuMDc3MDgzMzMzMzMzMywzMS45NCw3MS45OSJ9LCJpZCI6IjlJUndnZWkweHJmY3JkTEZ1TU5pQkx3dFRXWT0iLCJwYXJ0aXRpb25rZXkiOiJ7MTAuMTA4LjQ2LjE5ODo4MDgxIC0+IDEwLjE5OC4wLjM0OjQzNDE0fSIsInNvdXJjZSI6Im9wc3RlY2gzLm1idGEuY29tL3RyaWtlIiwic3BlY3ZlcnNpb24iOiIxLjAiLCJ0aW1lIjoiMjAyMi0wNi0wOFQxNjoxNzo0My4xODMwMDBaIiwidHlwZSI6ImNvbS5tYnRhLm9jcy5yYXdfbWVzc2FnZSJ9","lambdaArn":"test"}
+`
+  );
+
+  await putSourceObject(
+    "2022-01-01/ocs-saver-test-output-1-2022-01-01-failed1",
+    "original content"
+  );
+
+  await handle(
+    scheduledEventFactory.build({
+      time: "2022-01-02T12:00:00Z",
+      detail: { recover: true },
+    })
+  );
+
+  const sourceContent1 = await getSourceObject(
+    "2022-01-01/ocs-saver-test-output-1-2022-01-01-failed1"
+  );
+  const sourceContent2 = await getSourceObject(
+    "2022-01-01/ocs-saver-test-output-1-2022-01-01-failed2"
+  );
+
+  expect(sourceContent1).toEqual(Buffer.from("original content"));
+  expect(sourceContent2).toEqual(
+    Buffer.from(
+      `06/08/22,13:42:30,166744,RGPS,13:42:29,G,U15-141-631,3675,42.3481883333333,71.1404983333333,0.00,18.94
+06/08/22,12:17:43,53402,RGPS,12:17:43,G,U16-350-713,3087,42.2694266666667,71.0770833333333,31.94,71.99
+`
+    )
+  );
+});
+
 const extractOutputObject = async (key: string) => {
   const buffer = await getOutputObject(key);
   const tempDir = await makeTempDir("output");
@@ -134,6 +203,17 @@ const getOutputObject = async (key: string) => {
   return getStream.buffer(body);
 };
 
+const getSourceObject = async (key: string) => {
+  const { Body: body } = await client.send(
+    new GetObjectCommand({
+      Bucket: env.S3_BUCKET,
+      Key: path.posix.join(env.S3_PREFIX_SOURCE, key),
+    })
+  );
+
+  return getStream.buffer(body);
+};
+
 const makeTempDir = (prefix: string) =>
   fs.mkdtemp(path.join(os.tmpdir(), `${prefix}-`));
 
@@ -149,3 +229,9 @@ const putOutputObject = (key: string, data: Buffer) =>
 
 const putSourceObject = (key: string, data: string) =>
   putObject(path.posix.join(env.S3_PREFIX_SOURCE, key), Buffer.from(data));
+
+const putFailedProcessingObject = (key: string, data: string) =>
+  putObject(
+    path.posix.join("failed", env.S3_PREFIX_OUTPUT, "processing-failed", key),
+    Buffer.from(data)
+  );

@@ -8,6 +8,7 @@ import { DateTime } from "luxon";
 import { create as struct } from "superstruct";
 import { localFromISO } from "./datetime";
 import { OCSEvent } from "./processor/structs";
+import { wrapList } from "./util";
 
 Sentry.init();
 
@@ -38,16 +39,6 @@ const transformRecord = ({ recordId, data }: EventRecord): ResultRecord => {
     return { recordId, result: "ProcessingFailed", data };
   }
 };
-
-function wrapList<T>(item_or_items: T | Array<T>): Array<T> {
-  if (Array.isArray(item_or_items)) {
-    return item_or_items;
-  } else if (item_or_items === null || item_or_items === undefined) {
-    return [];
-  } else {
-    return [item_or_items];
-  }
-}
 
 // Only capture an error once per run; if many records throw errors and we try
 // to capture them all, the capturing itself can take a long time and cause the

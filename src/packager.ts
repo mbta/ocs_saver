@@ -1,9 +1,9 @@
 import fs from "fs/promises";
 import os from "os";
 import path from "path";
+import readline from "readline";
 import stream from "stream";
 import {
-  GetObjectCommand,
   HeadObjectCommand,
   NotFound,
   S3Client,
@@ -17,6 +17,7 @@ import { create as createTar } from "tar";
 import { localFromISO } from "./datetime";
 import { exception } from "./errors";
 import { Environment } from "./packager/structs";
+import { recoverLine, safeSend } from "./util";
 
 Sentry.init();
 
@@ -37,14 +38,25 @@ export const handler: ScheduledHandler = Sentry.wrapHandler(
     const outputLabel = serviceDay.replace(/-/g, "");
     const outputKey = path.posix.join(outputPrefix, `${outputLabel}.tar.gz`);
     const overwrite = detail?.overwrite ?? false;
+    const recover = detail?.recover ?? false;
 
-    if (!overwrite && (await objectExists(client, bucket, outputKey)))
+    if (
+      !(overwrite || recover) &&
+      (await objectExists(client, bucket, outputKey))
+    )
       throw exception("OutputKeyExists", outputKey);
+
+    const recoveryPrefix = recover
+      ? path.posix.join("failed", outputPrefix, "processing-failed")
+      : "";
 
     const archiveRoot = await concatAllObjects(
       client,
       bucket,
-      path.posix.join(sourcePrefix, serviceDay),
+      sourcePrefix,
+      outputPrefix,
+      serviceDay,
+      recoveryPrefix,
       // Mimic the directory structure of the old OCS.LogUploader from RTR
       path.join("root", "persistent-state", `${outputLabel}.txt`)
     );
@@ -79,13 +91,85 @@ export const handler: ScheduledHandler = Sentry.wrapHandler(
 const concatAllObjects = async (
   client: S3Client,
   bucket: string,
-  prefix: string,
+  sourcePrefix: string,
+  outputPrefix: string,
+  serviceDay: string,
+  recoveryPrefix: string,
   filename: string
 ) => {
+  const prefix = path.posix.join(sourcePrefix, serviceDay);
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "temp-"));
+  const recoveryTempDir = await fs.mkdtemp(
+    path.join(os.tmpdir(), "recovery-temp-")
+  );
   const outputPath = path.join(tempDir, filename);
   await fs.mkdir(path.dirname(outputPath), { recursive: true });
   const outputFile = await fs.open(outputPath, "w");
+
+  if (recoveryPrefix) {
+    const recoveryPath = path.join(
+      recoveryPrefix,
+      `ocs-saver-${outputPrefix}-1-${serviceDay}`
+    );
+
+    for await (const {
+      $metadata: metadata,
+      Contents: objects,
+    } of paginateListObjectsV2(
+      { client },
+      {
+        Bucket: bucket,
+        Prefix: recoveryPath,
+      }
+    )) {
+      if (objects === undefined)
+        throw exception("BadS3Response", JSON.stringify(metadata));
+
+      for (const { Key: key } of objects) {
+        if (key) {
+          const [fileName] = key.split("/").slice(-1);
+          const recoveredKey = path.posix.join(prefix, fileName);
+          const recoveredFileExists = await objectExists(
+            client,
+            bucket,
+            recoveredKey
+          );
+
+          if (!recoveredFileExists) {
+            const { Body: data } = await safeSend(client, bucket, key);
+            await fs.mkdir(path.dirname(path.join(recoveryTempDir, key)), {
+              recursive: true,
+            });
+            const recoveredFile = await fs.open(
+              path.join(recoveryTempDir, key),
+              "w"
+            );
+
+            const lines = readline.createInterface({
+              input: data,
+            });
+
+            for await (const line of lines) {
+              await fs.appendFile(recoveredFile, recoverLine(line));
+            }
+            await recoveredFile.close();
+
+            const upload = new Upload({
+              client,
+              params: {
+                Body: await fs.readFile(path.join(recoveryTempDir, key)),
+                Bucket: bucket,
+                Key: recoveredKey,
+              },
+            });
+
+            await recoveredFile.close();
+            await upload.done();
+          }
+        }
+      }
+    }
+  }
 
   for await (const {
     $metadata: metadata,
@@ -95,11 +179,7 @@ const concatAllObjects = async (
       throw exception("BadS3Response", JSON.stringify(metadata));
 
     for (const { Key: key } of objects) {
-      const command = new GetObjectCommand({ Bucket: bucket, Key: key });
-      const { $metadata: metadata, Body: data } = await client.send(command);
-
-      if (data === undefined)
-        throw exception("BadS3Response", JSON.stringify(metadata));
+      const { Body: data } = await safeSend(client, bucket, key);
 
       await fs.appendFile(outputFile, data);
       await fs.appendFile(outputFile, "\n");
