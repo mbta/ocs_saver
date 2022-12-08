@@ -246,7 +246,8 @@ const clearTempFolders = async () => {
   const tempFolders = await fs.readdir(os.tmpdir());
   tempFolders
     .filter((f) => f.startsWith("temp-"))
-    .forEach((folder) =>
-      fs.rmdir(path.join(os.tmpdir(), folder), { recursive: true })
-    );
+    .forEach((folder) => {
+      console.info("Deleting folder", folder);
+      fs.rmdir(path.join(os.tmpdir(), folder), { recursive: true });
+    });
 };
