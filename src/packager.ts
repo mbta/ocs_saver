@@ -39,6 +39,9 @@ export const handler: ScheduledHandler = Sentry.wrapHandler(
     const outputKey = path.posix.join(outputPrefix, `${outputLabel}.tar.gz`);
     const overwrite = detail?.overwrite ?? false;
     const recover = detail?.recover ?? false;
+    const clearTemp = detail?.clearTemp ?? false;
+
+    if (clearTemp) await clearTempFolders();
 
     if (
       !(overwrite || recover) &&
@@ -99,8 +102,6 @@ const concatAllObjects = async (
   filename: string
 ) => {
   const prefix = path.posix.join(sourcePrefix, serviceDay);
-  await clearTempFolders();
-
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "temp-"));
   const recoveryTempDir = await fs.mkdtemp(
     path.join(tempDir, "recovery-temp-")
@@ -246,7 +247,7 @@ const clearTempFolders = async () => {
   const tempFolders = await fs.readdir(os.tmpdir());
   tempFolders
     .filter((f) => f.startsWith("temp-") || f.startsWith("recovery-temp-"))
-    .forEach((folder) => 
+    .forEach((folder) =>
       fs.rm(path.join(os.tmpdir(), folder), { recursive: true })
-  );
+    );
 };
