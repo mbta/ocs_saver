@@ -64,7 +64,7 @@ export const handler: ScheduledHandler = Sentry.wrapHandler(
     const upload = new Upload({
       client,
       params: {
-        Body: createTarStream(archiveRoot, ["."]),
+        Body: createTarStream(archiveRoot, ["root"]),
         Bucket: bucket,
         ContentType: "application/gzip",
         Key: outputKey,
@@ -103,7 +103,7 @@ const concatAllObjects = async (
 
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "temp-"));
   const recoveryTempDir = await fs.mkdtemp(
-    path.join(os.tmpdir(), "recovery-temp-")
+    path.join(tempDir, "recovery-temp-")
   );
   const outputPath = path.join(tempDir, filename);
   await fs.mkdir(path.dirname(outputPath), { recursive: true });
@@ -245,8 +245,8 @@ const objectExists = async (client: S3Client, bucket: string, key: string) => {
 const clearTempFolders = async () => {
   const tempFolders = await fs.readdir(os.tmpdir());
   tempFolders
-    .filter((f) => f.startsWith("temp-"))
-    .forEach((folder) =>
+    .filter((f) => f.startsWith("temp-") || f.startsWith("recovery-temp-"))
+    .forEach((folder) => 
       fs.rm(path.join(os.tmpdir(), folder), { recursive: true })
-    );
+  );
 };
