@@ -72,7 +72,7 @@ export const handler: ScheduledHandler = Sentry.wrapHandler(
     });
 
     await upload.done();
-    await fs.rmdir(archiveRoot, { recursive: true });
+    await fs.rm(archiveRoot, { recursive: true });
   }
 );
 
