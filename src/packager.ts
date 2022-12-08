@@ -72,6 +72,7 @@ export const handler: ScheduledHandler = Sentry.wrapHandler(
     });
 
     await upload.done();
+    await fs.rmdir(archiveRoot, { recursive: true });
   }
 );
 
@@ -98,6 +99,8 @@ const concatAllObjects = async (
   filename: string
 ) => {
   const prefix = path.posix.join(sourcePrefix, serviceDay);
+  await clearTempFolders();
+
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "temp-"));
   const recoveryTempDir = await fs.mkdtemp(
     path.join(os.tmpdir(), "recovery-temp-")
@@ -237,4 +240,13 @@ const objectExists = async (client: S3Client, bucket: string, key: string) => {
     if (error instanceof NotFound) return false;
     throw error;
   }
+};
+
+const clearTempFolders = async () => {
+  const tempFolders = await fs.readdir(os.tmpdir());
+  tempFolders
+    .filter((f) => f.startsWith("temp-"))
+    .forEach((folder) =>
+      fs.rmdir(path.join(os.tmpdir(), folder), { recursive: true })
+    );
 };
