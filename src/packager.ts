@@ -39,6 +39,9 @@ export const handler: ScheduledHandler = Sentry.wrapHandler(
     const outputKey = path.posix.join(outputPrefix, `${outputLabel}.tar.gz`);
     const overwrite = detail?.overwrite ?? false;
     const recover = detail?.recover ?? false;
+    const clearTemp = detail?.clearTemp ?? false;
+
+    if (clearTemp) await clearTempFolders();
 
     if (
       !(overwrite || recover) &&
@@ -64,7 +67,7 @@ export const handler: ScheduledHandler = Sentry.wrapHandler(
     const upload = new Upload({
       client,
       params: {
-        Body: createTarStream(archiveRoot, ["."]),
+        Body: createTarStream(archiveRoot, ["root"]),
         Bucket: bucket,
         ContentType: "application/gzip",
         Key: outputKey,
@@ -72,6 +75,7 @@ export const handler: ScheduledHandler = Sentry.wrapHandler(
     });
 
     await upload.done();
+    await fs.rm(archiveRoot, { recursive: true });
   }
 );
 
@@ -100,7 +104,7 @@ const concatAllObjects = async (
   const prefix = path.posix.join(sourcePrefix, serviceDay);
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "temp-"));
   const recoveryTempDir = await fs.mkdtemp(
-    path.join(os.tmpdir(), "recovery-temp-")
+    path.join(tempDir, "recovery-temp-")
   );
   const outputPath = path.join(tempDir, filename);
   await fs.mkdir(path.dirname(outputPath), { recursive: true });
@@ -237,4 +241,13 @@ const objectExists = async (client: S3Client, bucket: string, key: string) => {
     if (error instanceof NotFound) return false;
     throw error;
   }
+};
+
+const clearTempFolders = async () => {
+  const tempFolders = await fs.readdir(os.tmpdir());
+  tempFolders
+    .filter((f) => f.startsWith("temp-") || f.startsWith("recovery-temp-"))
+    .forEach((folder) =>
+      fs.rm(path.join(os.tmpdir(), folder), { recursive: true })
+    );
 };
