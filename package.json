@@ -20,8 +20,8 @@
     "tar": "^6.1.11"
   },
   "devDependencies": {
-    "@tsconfig/node14": "^1.0.1",
     "@types/aws-lambda": "^8.10.110",
+    "@tsconfig/node14": "^1.0.3",
     "@types/jest": "^28.1.1",
     "@types/luxon": "^2.3.2",
     "@types/node": "^17.0.41",
