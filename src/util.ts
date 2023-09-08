@@ -6,7 +6,7 @@ import {
 import { exception } from "./errors";
 import { localFromISO } from "./datetime";
 import { OCSEvent } from "./processor/structs";
-import { create as struct } from "superstruct";
+import { mask as struct } from "superstruct";
 
 export const safeSend = async (
   client: S3Client,
