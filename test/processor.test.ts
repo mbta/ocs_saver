@@ -77,12 +77,12 @@ test("transforms records to timestamped raw OCS messages - with arbitrary field"
     buildKinesisRecord("rec1", {
       time: "2022-03-01T05:00:02Z",
       data: { raw: "101,DIAG,00:00:01,test1" },
-      sourceip: "127.0.0.1"
+      sourceip: "127.0.0.1",
     }),
     buildKinesisRecord("rec2", {
       time: "2022-03-01T05:00:03Z",
       data: { raw: "102,DIAG,00:00:02,test2" },
-      sourceip: "127.0.0.1"
+      sourceip: "127.0.0.1",
     }),
   ]);
 
