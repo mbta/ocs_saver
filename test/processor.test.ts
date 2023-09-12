@@ -19,7 +19,10 @@ const handle = (event: FirehoseTransformationEvent) =>
 const buildFirehoseEvent = (records: FirehoseTransformationEventRecord[]) =>
   firehoseEventFactory.build({ records });
 
-const buildKinesisRecord = (id: string, ocsEventAttrs: any) =>
+const buildKinesisRecord = (
+  id: string,
+  ocsEventAttrs: Record<PropertyKey, string | number | object>
+) =>
   kinesisRecordFactory.build(
     { recordId: id },
     { transient: { encodeEvent: ocsEventFactory.build(ocsEventAttrs) } }
@@ -27,7 +30,7 @@ const buildKinesisRecord = (id: string, ocsEventAttrs: any) =>
 
 const buildKinesisBatchRecord = (
   id: string,
-  ocsEventsAttrs: Array<Partial<OCSEvent>>
+  ocsEventsAttrs: Array<Record<PropertyKey, string | number | object>>
 ) =>
   kinesisRecordFactory.build(
     { recordId: id },
