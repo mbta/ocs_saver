@@ -19,7 +19,10 @@ const handle = (event: FirehoseTransformationEvent) =>
 const buildFirehoseEvent = (records: FirehoseTransformationEventRecord[]) =>
   firehoseEventFactory.build({ records });
 
-const buildKinesisRecord = (id: string, ocsEventAttrs: Partial<OCSEvent>) =>
+const buildKinesisRecord = (
+  id: string,
+  ocsEventAttrs: Record<PropertyKey, string | number | object>
+) =>
   kinesisRecordFactory.build(
     { recordId: id },
     { transient: { encodeEvent: ocsEventFactory.build(ocsEventAttrs) } }
@@ -27,7 +30,7 @@ const buildKinesisRecord = (id: string, ocsEventAttrs: Partial<OCSEvent>) =>
 
 const buildKinesisBatchRecord = (
   id: string,
-  ocsEventsAttrs: Array<Partial<OCSEvent>>
+  ocsEventsAttrs: Array<Record<PropertyKey, string | number | object>>
 ) =>
   kinesisRecordFactory.build(
     { recordId: id },
@@ -53,6 +56,36 @@ test("transforms records to timestamped raw OCS messages", async () => {
     buildKinesisRecord("rec2", {
       time: "2022-03-01T05:00:03Z",
       data: { raw: "102,DIAG,00:00:02,test2" },
+    }),
+  ]);
+
+  const { records } = (await handle(event)) as FirehoseTransformationResult;
+
+  expect(records.map(decodeRecordData)).toMatchObject([
+    {
+      data: "03/01/22,00:00:02,101,DIAG,00:00:01,test1",
+      recordId: "rec1",
+      result: "Ok",
+    },
+    {
+      data: "03/01/22,00:00:03,102,DIAG,00:00:02,test2",
+      recordId: "rec2",
+      result: "Ok",
+    },
+  ]);
+});
+
+test("transforms records to timestamped raw OCS messages - with arbitrary field", async () => {
+  const event = buildFirehoseEvent([
+    buildKinesisRecord("rec1", {
+      time: "2022-03-01T05:00:02Z",
+      data: { raw: "101,DIAG,00:00:01,test1" },
+      sourceip: "127.0.0.1",
+    }),
+    buildKinesisRecord("rec2", {
+      time: "2022-03-01T05:00:03Z",
+      data: { raw: "102,DIAG,00:00:02,test2" },
+      sourceip: "127.0.0.1",
     }),
   ]);
 

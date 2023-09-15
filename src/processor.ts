@@ -5,7 +5,7 @@ import {
   FirehoseTransformationResultRecord as ResultRecord,
 } from "aws-lambda";
 import { DateTime } from "luxon";
-import { create as struct } from "superstruct";
+import { mask as struct } from "superstruct";
 import { localFromISO } from "./datetime";
 import { OCSEvent } from "./processor/structs";
 import { wrapList } from "./util";
