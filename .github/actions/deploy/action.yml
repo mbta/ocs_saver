@@ -30,7 +30,7 @@ runs:
     - name: Setup AWS Credentials
       uses: aws-actions/configure-aws-credentials@v1
       with:
-        role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+        role-to-assume: ${{ input.role-to-assume }}
         aws-region: 'us-east-1'
 
     - run: >-
