@@ -1,16 +1,17 @@
 name: Deploy
 description: Deploys new Lambda function code
+
+permissions:
+  id-token: write
+
 inputs:
-  aws-access-key-id:
-    description: AWS access key
-    required: true
-  aws-secret-access-key:
-    description: AWS secret key
+  aws-role-arn:
+    description: ARN of the AWS IAM role to assume
     required: true
   dry-run:
     description: >-
       If truthy, the deploy will be a dry run, or will not be attempted at all
-      if `aws-access-key-id` is blank (instead of erroring)
+      if `aws-role-arn` is blank (instead of erroring)
     required: false
     default: ""
   environment:
@@ -32,10 +33,9 @@ runs:
         --zip-file fileb://dist/packager.zip
         ${{ inputs.dry-run && '--dry-run' || '' }}
       shell: bash
-      if: ${{ !inputs.dry-run || inputs.aws-access-key-id }}
+      if: ${{ !inputs.dry-run || inputs.aws-role-arn }}
       env:
-        AWS_ACCESS_KEY_ID: ${{ inputs.aws-access-key-id }}
-        AWS_SECRET_ACCESS_KEY: ${{ inputs.aws-secret-access-key }}
+        AWS_ROLE_ARN: ${{ inputs.aws-role-arn }}
         AWS_REGION: us-east-1
 
     - run: >-
@@ -44,8 +44,7 @@ runs:
         --zip-file fileb://dist/processor.zip
         ${{ inputs.dry-run && '--dry-run' || '' }}
       shell: bash
-      if: ${{ !inputs.dry-run || inputs.aws-access-key-id }}
+      if: ${{ !inputs.dry-run || inputs.aws-role-arn }}
       env:
-        AWS_ACCESS_KEY_ID: ${{ inputs.aws-access-key-id }}
-        AWS_SECRET_ACCESS_KEY: ${{ inputs.aws-secret-access-key }}
+        AWS_ROLE_ARN: ${{ inputs.aws-role-arn }}
         AWS_REGION: us-east-1
