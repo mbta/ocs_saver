@@ -5,13 +5,13 @@ permissions:
   id-token: write
 
 inputs:
-  aws-role-arn:
+  role-to-assume:
     description: ARN of the AWS IAM role to assume
     required: true
   dry-run:
     description: >-
       If truthy, the deploy will be a dry run, or will not be attempted at all
-      if `aws-role-arn` is blank (instead of erroring)
+      if `role-to-assume` is blank (instead of erroring)
     required: false
     default: ""
   environment:
@@ -33,9 +33,9 @@ runs:
         --zip-file fileb://dist/packager.zip
         ${{ inputs.dry-run && '--dry-run' || '' }}
       shell: bash
-      if: ${{ !inputs.dry-run || inputs.aws-role-arn }}
+      if: ${{ !inputs.dry-run || inputs.role-to-assume }}
       env:
-        AWS_ROLE_ARN: ${{ inputs.aws-role-arn }}
+        AWS_ROLE_ARN: ${{ inputs.role-to-assume }}
         AWS_REGION: us-east-1
 
     - run: >-
@@ -44,7 +44,7 @@ runs:
         --zip-file fileb://dist/processor.zip
         ${{ inputs.dry-run && '--dry-run' || '' }}
       shell: bash
-      if: ${{ !inputs.dry-run || inputs.aws-role-arn }}
+      if: ${{ !inputs.dry-run || inputs.role-to-assume }}
       env:
-        AWS_ROLE_ARN: ${{ inputs.aws-role-arn }}
+        AWS_ROLE_ARN: ${{ inputs.role-to-assume }}
         AWS_REGION: us-east-1
