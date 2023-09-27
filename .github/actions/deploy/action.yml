@@ -5,6 +5,9 @@ permissions:
   id-token: write
 
 inputs:
+  role-to-assume:
+    description: ARN of the AWS IAM role to assume
+    required: true
   dry-run:
     description: >-
       If truthy, the deploy will be a dry run, or will not be attempted at all
@@ -36,7 +39,7 @@ runs:
         --zip-file fileb://dist/packager.zip
         ${{ inputs.dry-run && '--dry-run' || '' }}
       shell: bash
-      if: ${{ !inputs.dry-run }}
+      if: ${{ !inputs.dry-run || inputs.role-to-assume }}
 
     - run: >-
         aws lambda update-function-code
@@ -44,4 +47,4 @@ runs:
         --zip-file fileb://dist/processor.zip
         ${{ inputs.dry-run && '--dry-run' || '' }}
       shell: bash
-      if: ${{ !inputs.dry-run }}
+      if: ${{ !inputs.dry-run || inputs.role-to-assume }}
