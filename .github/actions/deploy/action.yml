@@ -8,6 +8,7 @@ inputs:
   role-to-assume:
     description: ARN of the AWS IAM role to assume
     required: true
+    default: {{ secrets.AWS_ROLE_ARN }}
   dry-run:
     description: >-
       If truthy, the deploy will be a dry run, or will not be attempted at all
@@ -28,7 +29,7 @@ runs:
       shell: bash
 
     - name: Setup AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v1
+      uses: aws-actions/configure-aws-credentials@v4
       with:
         role-to-assume: ${{ inputs.role-to-assume }}
         aws-region: 'us-east-1'
