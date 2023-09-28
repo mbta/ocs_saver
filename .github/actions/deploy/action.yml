@@ -5,6 +5,9 @@ permissions:
   id-token: write
 
 inputs:
+  role-to-assume:
+    description: ARN of the AWS IAM role to assume
+    required: true
   dry-run:
     description: >-
       If truthy, the deploy will be a dry run, or will not be attempted at all
@@ -17,13 +20,6 @@ inputs:
 runs:
   using: composite
   steps:
-
-    - name: Setup AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v1
-      with:
-        role-to-assume: ${{ secrets.role-to-assume }}
-        aws-region: 'us-east-1'
-
     - uses: ./.github/actions/deps
 
     - run: ./build.sh src/packager.ts
@@ -31,13 +27,19 @@ runs:
     - run: ./build.sh src/processor.ts
       shell: bash
 
+    - name: Setup AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        role-to-assume: ${{ inputs.role-to-assume }}
+        aws-region: 'us-east-1'
+
     - run: >-
         aws lambda update-function-code
         --function-name ocs-saver-${{ inputs.environment }}-packager
         --zip-file fileb://dist/packager.zip
         ${{ inputs.dry-run && '--dry-run' || '' }}
       shell: bash
-      if: ${{ !inputs.dry-run }}
+      if: ${{ !inputs.dry-run || inputs.role-to-assume }}
 
     - run: >-
         aws lambda update-function-code
@@ -45,4 +47,4 @@ runs:
         --zip-file fileb://dist/processor.zip
         ${{ inputs.dry-run && '--dry-run' || '' }}
       shell: bash
-      if: ${{ !inputs.dry-run }}
+      if: ${{ !inputs.dry-run || inputs.role-to-assume }}
