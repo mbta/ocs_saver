@@ -17,9 +17,9 @@ runs:
   using: composite
   steps:
     - name: Configure AWS credentials from Test account
-      uses: aws-actions/configure-aws-credentials@v4
+      uses: aws-actions/configure-aws-credentials@v1
       with:
-        role-to-assume: arn:aws:iam::111111111111:role/my-github-actions-role-test
+        role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
         aws-region: us-east-1
 
     - uses: ./.github/actions/deps
@@ -37,7 +37,7 @@ runs:
       shell: bash
       if: ${{ !inputs.dry-run || inputs.aws-role-to-assume }}
       env:
-        AWS_ACCESS_KEY_ID: ${{ inputs.aws-role-to-assume }}
+        AWS_ROLE_TO_ASSUME: ${{ inputs.aws-role-to-assume }}
         AWS_REGION: us-east-1
 
     - run: >-
@@ -48,5 +48,5 @@ runs:
       shell: bash
       if: ${{ !inputs.dry-run || inputs.aws-role-to-assume }}
       env:
-        AWS_ACCESS_KEY_ID: ${{ inputs.aws-role-to-assume }}
+        AWS_ROLE_TO_ASSUME: ${{ inputs.aws-role-to-assume }}
         AWS_REGION: us-east-1
