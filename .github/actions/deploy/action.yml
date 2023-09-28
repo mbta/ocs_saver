@@ -3,6 +3,7 @@ description: Deploys new Lambda function code
 
 permissions:
   id-token: write
+  contents: read
 
 inputs:
   role-to-assume:
