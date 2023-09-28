@@ -8,7 +8,7 @@ inputs:
   role-to-assume:
     description: ARN of the AWS IAM role to assume
     required: true
-    default: {{ secrets.AWS_ROLE_ARN }}
+    default: ${{ secrets.AWS_ROLE_ARN }}
   dry-run:
     description: >-
       If truthy, the deploy will be a dry run, or will not be attempted at all
