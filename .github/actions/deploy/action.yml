@@ -19,7 +19,7 @@ runs:
     - name: Configure AWS credentials from Test account
       uses: aws-actions/configure-aws-credentials@v1
       with:
-        role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+        role-to-assume: ${{ inputs.aws-role-to-assume }}
         aws-region: us-east-1
 
     - uses: ./.github/actions/deps
