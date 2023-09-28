@@ -17,18 +17,19 @@ inputs:
 runs:
   using: composite
   steps:
-    - uses: ./.github/actions/deps
-
-    - run: ./build.sh src/packager.ts
-      shell: bash
-    - run: ./build.sh src/processor.ts
-      shell: bash
 
     - name: Setup AWS Credentials
       uses: aws-actions/configure-aws-credentials@v1
       with:
         role-to-assume: ${{ secrets.role-to-assume }}
         aws-region: 'us-east-1'
+
+    - uses: ./.github/actions/deps
+
+    - run: ./build.sh src/packager.ts
+      shell: bash
+    - run: ./build.sh src/processor.ts
+      shell: bash
 
     - run: >-
         aws lambda update-function-code
