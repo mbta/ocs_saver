@@ -1,16 +1,13 @@
 name: Deploy
 description: Deploys new Lambda function code
 inputs:
-  aws-access-key-id:
+  role-to-assume:
     description: AWS access key
-    required: true
-  aws-secret-access-key:
-    description: AWS secret key
     required: true
   dry-run:
     description: >-
       If truthy, the deploy will be a dry run, or will not be attempted at all
-      if `aws-access-key-id` is blank (instead of erroring)
+      if `aws-role-to-assume` is blank (instead of erroring)
     required: false
     default: ""
   environment:
@@ -19,6 +16,12 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: ${{ inputs.role-to-assume }}
+        aws-region: us-east-1
+
     - uses: ./.github/actions/deps
 
     - run: ./build.sh src/packager.ts
@@ -32,11 +35,7 @@ runs:
         --zip-file fileb://dist/packager.zip
         ${{ inputs.dry-run && '--dry-run' || '' }}
       shell: bash
-      if: ${{ !inputs.dry-run || inputs.aws-access-key-id }}
-      env:
-        AWS_ACCESS_KEY_ID: ${{ inputs.aws-access-key-id }}
-        AWS_SECRET_ACCESS_KEY: ${{ inputs.aws-secret-access-key }}
-        AWS_REGION: us-east-1
+      if: ${{ !inputs.dry-run || inputs.role-to-assume }}
 
     - run: >-
         aws lambda update-function-code
@@ -44,8 +43,4 @@ runs:
         --zip-file fileb://dist/processor.zip
         ${{ inputs.dry-run && '--dry-run' || '' }}
       shell: bash
-      if: ${{ !inputs.dry-run || inputs.aws-access-key-id }}
-      env:
-        AWS_ACCESS_KEY_ID: ${{ inputs.aws-access-key-id }}
-        AWS_SECRET_ACCESS_KEY: ${{ inputs.aws-secret-access-key }}
-        AWS_REGION: us-east-1
+      if: ${{ !inputs.dry-run || inputs.role-to-assume }}
