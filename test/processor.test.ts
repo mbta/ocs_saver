@@ -1,5 +1,4 @@
 import { handler } from "~/src/processor";
-import { OCSEvent } from "~/src/processor/structs";
 import {
   FirehoseTransformationEvent,
   FirehoseTransformationEventRecord,
