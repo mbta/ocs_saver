@@ -25,7 +25,7 @@
     "@types/jest": "^28.1.1",
     "@types/luxon": "^2.3.2",
     "@types/node": "^20.8.8",
-    "@types/s3rver": "^3.7.0",
+    "@types/s3rver": "^3.7.3",
     "@types/tar": "^6.1.1",
     "@types/uuid": "^8.3.4",
     "@typescript-eslint/eslint-plugin": "^5.27.1",
