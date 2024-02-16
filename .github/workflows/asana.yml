@@ -2,7 +2,16 @@ name: Asana integration for GitHub PRs
 on:
   workflow_dispatch:
   pull_request:
-    types: [review_requested, closed, opened, reopened, converted_to_draft, edited, ready_for_review]
+    types:
+      [
+        review_requested,
+        closed,
+        opened,
+        reopened,
+        converted_to_draft,
+        edited,
+        ready_for_review,
+      ]
   pull_request_review:
     types: [submitted]
 
