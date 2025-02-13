@@ -28,7 +28,7 @@ basename=$(basename "$1")
 module=${basename%.ts}
 outfile="dist/$module.js"
 
-$esbuild "$1" --bundle --outfile="$outfile" --platform=node --target=node14
+$esbuild "$1" --bundle --outfile="$outfile" --platform=node --target=node22
 
 cp "$outfile" dist/index.js
 
