@@ -1,8 +1,4 @@
-import {
-  GetObjectCommand,
-  GetObjectCommandOutput,
-  S3Client,
-} from "@aws-sdk/client-s3";
+import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { NodeJsClient } from "@smithy/types";
 import { exception } from "./errors";
 import { localFromISO } from "./datetime";
@@ -27,7 +23,7 @@ export const safeSend = async (
 export const recoverLine = (line: string): string => {
   if (line.trim() === "") return "";
 
-  const { rawData } = JSON.parse(line);
+  const { rawData } = JSON.parse(line) as { rawData: string };
   const events = wrapList(
     JSON.parse(Buffer.from(rawData, "base64").toString())
   );
@@ -36,7 +32,7 @@ export const recoverLine = (line: string): string => {
   const formattedTime = datetime.toFormat("MM/dd/yy,HH:mm:ss");
   const timestampedRaw = events
     .map((eventRaw) => {
-      const {data: { raw }} = struct(eventRaw, OCSEvent); // prettier-ignore
+      const { data: { raw } } = struct(eventRaw, OCSEvent); // prettier-ignore
       return `${formattedTime},${raw}`;
     })
     .join("\n");
@@ -44,7 +40,7 @@ export const recoverLine = (line: string): string => {
   return `${timestampedRaw}\n`;
 };
 
-export function wrapList<T>(item_or_items: T | Array<T>): Array<T> {
+export function wrapList<T>(item_or_items: T | T[]): T[] {
   if (Array.isArray(item_or_items)) {
     return item_or_items;
   } else if (item_or_items === null || item_or_items === undefined) {

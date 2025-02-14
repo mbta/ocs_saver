@@ -22,8 +22,19 @@ import { recoverLine, safeSend } from "./util";
 
 Sentry.init();
 
+interface HandlerPayload {
+  detail:
+    | {
+        overwrite: boolean | undefined;
+        recover: boolean | undefined;
+        clearTemp: boolean | undefined;
+      }
+    | undefined;
+  time: string;
+}
+
 export const handler: ScheduledHandler = Sentry.wrapHandler(
-  async ({ detail, time }) => {
+  async ({ detail, time }: HandlerPayload) => {
     // Copy `process.env` to avoid `optional` properties becoming the string
     // "undefined" instead of real `undefined`; this may have to do with its
     // automatic string conversion behavior
@@ -142,34 +153,36 @@ const concatAllObjects = async (
 
           if (!recoveredFileExists) {
             const { Body: data } = await safeSend(client, bucket, key);
-            await fs.mkdir(path.dirname(path.join(recoveryTempDir, key)), {
-              recursive: true,
-            });
-            const recoveredFile = await fs.open(
-              path.join(recoveryTempDir, key),
-              "w"
-            );
+            if (data) {
+              await fs.mkdir(path.dirname(path.join(recoveryTempDir, key)), {
+                recursive: true,
+              });
+              const recoveredFile = await fs.open(
+                path.join(recoveryTempDir, key),
+                "w"
+              );
 
-            const lines = readline.createInterface({
-              input: data!,
-            });
+              const lines = readline.createInterface({
+                input: data,
+              });
 
-            for await (const line of lines) {
-              await fs.appendFile(recoveredFile, recoverLine(line));
+              for await (const line of lines) {
+                await fs.appendFile(recoveredFile, recoverLine(line));
+              }
+              await recoveredFile.close();
+
+              const upload = new Upload({
+                client,
+                params: {
+                  Body: await fs.readFile(path.join(recoveryTempDir, key)),
+                  Bucket: bucket,
+                  Key: recoveredKey,
+                },
+              });
+
+              await recoveredFile.close();
+              await upload.done();
             }
-            await recoveredFile.close();
-
-            const upload = new Upload({
-              client,
-              params: {
-                Body: await fs.readFile(path.join(recoveryTempDir, key)),
-                Bucket: bucket,
-                Key: recoveredKey,
-              },
-            });
-
-            await recoveredFile.close();
-            await upload.done();
           }
         }
       }
@@ -186,9 +199,11 @@ const concatAllObjects = async (
     for (const { Key: key } of objects) {
       const { Body: data } = await safeSend(client, bucket, key);
 
-      const stringData = await data!.transformToString();
-      await fs.appendFile(outputFile, stringData);
-      await fs.appendFile(outputFile, "\n");
+      if (data) {
+        const stringData = await data.transformToString();
+        await fs.appendFile(outputFile, stringData);
+        await fs.appendFile(outputFile, "\n");
+      }
     }
   }
 
@@ -258,6 +273,7 @@ const clearTempFolders = async () => {
   const tempFolders = await fs.readdir(os.tmpdir());
   tempFolders
     .filter((f) => f.startsWith("temp-") || f.startsWith("recovery-temp-"))
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     .forEach((folder) =>
       fs.rm(path.join(os.tmpdir(), folder), { recursive: true })
     );

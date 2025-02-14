@@ -29,7 +29,7 @@ const buildKinesisRecord = (
 
 const buildKinesisBatchRecord = (
   id: string,
-  ocsEventsAttrs: Array<Record<PropertyKey, string | number | object>>
+  ocsEventsAttrs: Record<PropertyKey, string | number | object>[]
 ) =>
   kinesisRecordFactory.build(
     { recordId: id },

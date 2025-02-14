@@ -12,6 +12,7 @@ import { wrapList } from "./util";
 
 Sentry.init();
 
+// eslint-disable-next-line @typescript-eslint/require-await
 export const handler: Handler = Sentry.wrapHandler(async ({ records }) => ({
   records: records.map(transformRecord),
 }));
