@@ -1,5 +1,5 @@
 /** @type {import('ts-jest/dist/types').InitialOptionsTsJest} */
-module.exports = {
+export default {
   moduleNameMapper: { "^~/(.*)$": "<rootDir>/$1" },
   preset: "ts-jest",
   resetMocks: true,
