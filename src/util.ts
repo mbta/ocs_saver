@@ -3,16 +3,17 @@ import {
   GetObjectCommandOutput,
   S3Client,
 } from "@aws-sdk/client-s3";
+import { NodeJsClient } from "@smithy/types";
 import { exception } from "./errors";
 import { localFromISO } from "./datetime";
 import { OCSEvent } from "./processor/structs";
 import { mask as struct } from "superstruct";
 
 export const safeSend = async (
-  client: S3Client,
+  client: NodeJsClient<S3Client>,
   bucket: string,
   key?: string
-): Promise<GetObjectCommandOutput> => {
+) => {
   const command = new GetObjectCommand({ Bucket: bucket, Key: key });
   const response = await client.send(command);
   const { $metadata: metadata, Body: data } = response;

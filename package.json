@@ -20,6 +20,7 @@
     "tar": "^6.1.11"
   },
   "devDependencies": {
+    "@smithy/types": "^4.1.0",
     "@tsconfig/node22": "^22.0.0",
     "@types/aws-lambda": "^8.10.110",
     "@types/jest": "^29.5.14",

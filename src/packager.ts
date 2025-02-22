@@ -11,6 +11,7 @@ import {
 } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
 import { AWSLambda as Sentry } from "@sentry/serverless";
+import { NodeJsClient } from "@smithy/types";
 import { ScheduledHandler } from "aws-lambda";
 import { create as struct } from "superstruct";
 import { create as createTar } from "tar";
@@ -93,7 +94,7 @@ export const handler: ScheduledHandler = Sentry.wrapHandler(
  * [1]: https://docs.aws.amazon.com/AmazonS3/latest/userguide/ListingKeysUsingAPIs.html
  */
 const concatAllObjects = async (
-  client: S3Client,
+  client: NodeJsClient<S3Client>,
   bucket: string,
   sourcePrefix: string,
   outputPrefix: string,
@@ -150,7 +151,7 @@ const concatAllObjects = async (
             );
 
             const lines = readline.createInterface({
-              input: data,
+              input: data!,
             });
 
             for await (const line of lines) {
@@ -185,7 +186,8 @@ const concatAllObjects = async (
     for (const { Key: key } of objects) {
       const { Body: data } = await safeSend(client, bucket, key);
 
-      await fs.appendFile(outputFile, data);
+      const stringData = await data!.transformToString();
+      await fs.appendFile(outputFile, stringData);
       await fs.appendFile(outputFile, "\n");
     }
   }
@@ -227,13 +229,22 @@ const makeS3Client = (env: Environment) => {
       : undefined;
 
   // Use `forcePathStyle` to allow using S3rver on `localhost` in tests
-  return new S3Client({ credentials, endpoint, forcePathStyle: true, region });
+  return new S3Client({
+    credentials,
+    endpoint,
+    forcePathStyle: true,
+    region,
+  }) as NodeJsClient<S3Client>;
 };
 
 /**
  * Returns whether there is an object with the given key in the given bucket.
  */
-const objectExists = async (client: S3Client, bucket: string, key: string) => {
+const objectExists = async (
+  client: NodeJsClient<S3Client>,
+  bucket: string,
+  key: string
+) => {
   try {
     await client.send(new HeadObjectCommand({ Bucket: bucket, Key: key }));
     return true;

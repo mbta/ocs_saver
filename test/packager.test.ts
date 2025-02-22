@@ -10,6 +10,7 @@ import {
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
+import { NodeJsClient } from "@smithy/types";
 import { ScheduledEvent } from "aws-lambda";
 import getStream from "get-stream";
 import { promise as readdirp } from "readdirp";
@@ -29,7 +30,7 @@ const env = {
   S3_PREFIX_SOURCE: "test-source",
 };
 let s3rver: S3rver;
-let client: S3Client;
+let client: NodeJsClient<S3Client>;
 
 beforeAll(async () => {
   process.env = { ...originalEnv, ...env };
@@ -45,7 +46,7 @@ beforeAll(async () => {
     endpoint: env.S3_ENDPOINT,
     forcePathStyle: true,
     region: env.AWS_REGION,
-  });
+  }) as NodeJsClient<S3Client>;
 
   await s3rver.run();
 });
@@ -200,7 +201,7 @@ const getOutputObject = async (key: string) => {
     })
   );
 
-  return getStream.buffer(body);
+  return getStream.buffer(body!);
 };
 
 const getSourceObject = async (key: string) => {
@@ -211,7 +212,7 @@ const getSourceObject = async (key: string) => {
     })
   );
 
-  return getStream.buffer(body);
+  return getStream.buffer(body!);
 };
 
 const makeTempDir = (prefix: string) =>
