@@ -9,7 +9,7 @@ runs:
         path: ~/.asdf
         key: ${{ env.CACHE_UUID }}-asdf-${{ hashFiles('.tool-versions') }}
 
-    - uses: asdf-vm/actions/install@v1
+    - uses: asdf-vm/actions/install@v4
       if: "!steps.asdf-cache.outputs.cache-hit"
 
     - uses: mbta/actions/reshim-asdf@v1

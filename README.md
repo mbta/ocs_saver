@@ -32,7 +32,8 @@
 ## Other Tasks
 
 Running `aws` commands requires [setting up the AWS CLI][aws]. If your AWS
-account is in the TRC team group, you should have all required permissions.
+account is in the Transit Data team group, you should have all required
+permissions.
 
 [aws]: https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html
 
@@ -86,7 +87,7 @@ This repo holds two separate scripts which are deployed to AWS Lambda:
 Since much of this behavior is defined in infrastructure rather than this repo,
 it may also help to reference the [Terraform module][infra].
 
-[infra]: https://github.com/mbta/devops/tree/master/terraform/modules/app-ocs-saver
+[infra]: https://github.com/mbta/terraform_modules/tree/main/terraform-aws-mbta-ocs-saver
 
 ```mermaid
 flowchart LR
