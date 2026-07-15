@@ -7,3 +7,5 @@ updates:
     commit-message:
       prefix: deps
       prefix-development: deps(dev)
+    cooldown:
+      default-days: 7
