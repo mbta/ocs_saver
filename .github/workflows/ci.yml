@@ -103,6 +103,8 @@ jobs:
 
   # If CI passes on main branch, kick off a dev deploy.
   deploy-dev:
+    permissions:
+      id-token: write # Needed to communicate with AWS
     if: ${{ github.ref_type == 'branch' && github.ref_name == 'main' }}
     needs: [dry-deploy, format, lint, shellcheck, tests, typecheck, zizmor]
     uses: ./.github/workflows/deploy-dev.yml
