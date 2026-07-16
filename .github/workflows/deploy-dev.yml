@@ -7,6 +7,13 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: read # Needed to check out code
+
+concurrency:
+  group: deploy-dev
+  cancel-in-progress: true
+
 env:
   CACHE_UUID: ${{ secrets.CACHE_UUID }}
 
@@ -15,18 +22,17 @@ jobs:
     name: Deploy
     runs-on: ubuntu-latest
     permissions:
-      id-token: write
-      contents: read
+      id-token: write # Needed to communicate with AWS
     if: >-
       ${{
         github.event_name == 'workflow_dispatch' ||
         github.event.workflow_run.conclusion == 'success'
       }}
     environment: dev
-    concurrency: deploy-dev
-
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2.7.0
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/deploy
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
