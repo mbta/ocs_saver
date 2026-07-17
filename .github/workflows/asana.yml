@@ -15,9 +15,12 @@ on:
   pull_request_review:
     types: [submitted]
 
+permissions:
+  pull-requests: read # Matches the permissions declared by mbta/workflows' asana.yml
+
 jobs:
   call-workflow:
-    uses: mbta/workflows/.github/workflows/asana.yml@main
+    uses: mbta/workflows/.github/workflows/asana.yml@c76e5ccd9556fbea52bc41548f7ceed5985ad775 # v5.1.0
     with:
       development-section: "In Development"
       review-section: "Pending Review"

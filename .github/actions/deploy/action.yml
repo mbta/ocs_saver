@@ -33,18 +33,20 @@ runs:
         aws lambda update-function-code
         --function-name ocs-saver-${INPUTS_ENVIRONMENT}-packager
         --zip-file fileb://dist/packager.zip
-        ${{ inputs.dry-run && '--dry-run' || '' }}
+        ${DRY_RUN_FLAG}
       shell: bash
       if: ${{ !inputs.dry-run || inputs.role-to-assume }}
       env:
         INPUTS_ENVIRONMENT: ${{ inputs.environment }}
+        DRY_RUN_FLAG: ${{ inputs.dry-run && '--dry-run' || '' }}
 
     - run: >-
         aws lambda update-function-code
         --function-name ocs-saver-${INPUTS_ENVIRONMENT}-firehose-processor
         --zip-file fileb://dist/processor.zip
-        ${{ inputs.dry-run && '--dry-run' || '' }}
+        ${DRY_RUN_FLAG}
       shell: bash
       if: ${{ !inputs.dry-run || inputs.role-to-assume }}
       env:
         INPUTS_ENVIRONMENT: ${{ inputs.environment }}
+        DRY_RUN_FLAG: ${{ inputs.dry-run && '--dry-run' || '' }}
