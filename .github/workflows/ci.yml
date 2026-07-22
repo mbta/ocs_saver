@@ -36,7 +36,6 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           dry-run: "true"
           environment: dev
-
   format:
     name: Format
     runs-on: ubuntu-latest
