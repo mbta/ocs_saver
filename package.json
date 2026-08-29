@@ -17,7 +17,7 @@
     "@sentry/serverless": "^7.74.1",
     "luxon": "^2.5.2",
     "superstruct": "^0.16.0",
-    "tar": "^6.1.11"
+    "tar": "^7.5.20"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.110",
@@ -26,7 +26,7 @@
     "@types/luxon": "^2.3.2",
     "@types/node": "^20.8.8",
     "@types/s3rver": "^3.7.0",
-    "@types/tar": "^6.1.1",
+    "@types/tar": "^7.0.87",
     "@types/uuid": "^8.3.4",
     "@typescript-eslint/eslint-plugin": "^5.27.1",
     "@typescript-eslint/parser": "^5.62.0",
