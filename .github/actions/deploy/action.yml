@@ -31,6 +31,20 @@ runs:
     - run: ./build.sh src/processor.ts
       shell: bash
 
+    - run: |
+        echo "inputs.dry-run='${DRY_RUN}'"
+        if [[ -n "${ROLE_TO_ASSUME}" ]]; then
+          echo "inputs.role-to-assume is set"
+        else
+          echo "inputs.role-to-assume is empty"
+        fi
+        echo "DRY_RUN_OPT='${DRY_RUN_OPT}'"
+      shell: bash
+      env:
+        DRY_RUN: ${{ inputs.dry-run }}
+        ROLE_TO_ASSUME: ${{ inputs.role-to-assume }}
+        DRY_RUN_OPT: ${{ inputs.dry-run && '--dry-run' || '' }}
+
     - run: >-
         aws lambda update-function-code
         --function-name ocs-saver-${ENVIRONMENT}-packager
