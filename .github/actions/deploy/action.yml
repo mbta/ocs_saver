@@ -18,6 +18,8 @@ runs:
   steps:
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
+      # Only configure AWS credentials if not doing a dry run or if a role is provided
+      if: ${{ !inputs.dry-run || inputs.role-to-assume }}
       with:
         role-to-assume: ${{ inputs.role-to-assume }}
         aws-region: us-east-1
