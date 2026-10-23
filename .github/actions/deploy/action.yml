@@ -18,6 +18,8 @@ runs:
   steps:
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
+      # Only configure AWS credentials if not doing a dry run or if a role is provided
+      if: ${{ !inputs.dry-run || inputs.role-to-assume }}
       with:
         role-to-assume: ${{ inputs.role-to-assume }}
         aws-region: us-east-1
@@ -28,6 +30,20 @@ runs:
       shell: bash
     - run: ./build.sh src/processor.ts
       shell: bash
+
+    - run: |
+        echo "inputs.dry-run='${DRY_RUN}'"
+        if [[ -n "${ROLE_TO_ASSUME}" ]]; then
+          echo "inputs.role-to-assume is set"
+        else
+          echo "inputs.role-to-assume is empty"
+        fi
+        echo "DRY_RUN_OPT='${DRY_RUN_OPT}'"
+      shell: bash
+      env:
+        DRY_RUN: ${{ inputs.dry-run }}
+        ROLE_TO_ASSUME: ${{ inputs.role-to-assume }}
+        DRY_RUN_OPT: ${{ inputs.dry-run && '--dry-run' || '' }}
 
     - run: >-
         aws lambda update-function-code
