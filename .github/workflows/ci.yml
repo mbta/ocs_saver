@@ -2,9 +2,6 @@ name: CI
 
 on:
   push:
-    paths-ignore:
-      - "*.md"
-      - LICENSE
 
 concurrency:
   group: ci-${{ github.ref }}
