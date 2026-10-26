@@ -12,3 +12,4 @@ export const Environment = type({
 });
 
 export type Environment = Infer<typeof Environment>;
+
